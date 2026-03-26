@@ -571,37 +571,72 @@ function zoomFit(){var c=document.getElementById('previewContainer');setZoom(Mat
 
 function getSpacing(w,h){
   var minDim=Math.min(w,h);
-  var pad=Math.max(0.5,minDim*0.04);
-  var gap=Math.max(0.15,minDim*0.02);
+  var a=w*h;
+  var contentW=countContentWeight();
+  var spacePerSlot=a/contentW;
+  var spacingBoost=1;
+  if(spacePerSlot>1200)spacingBoost=Math.min(1.8,spacePerSlot/1200);
+  var pad=Math.max(0.5,minDim*0.04*spacingBoost);
+  var gap=Math.max(0.15,minDim*0.02*spacingBoost);
   return{pad:pad,gap:gap};
+}
+
+function countContentWeight(){
+  var w=0;
+  if(document.getElementById('institutionName').value)w+=1.5;
+  w+=1.2;
+  if(showCas&&document.getElementById('casNumber').value)w+=0.4;
+  if(document.getElementById('concentration').value)w+=0.3;
+  if(document.getElementById('chemEquation').value)w+=0.6;
+  if(document.getElementById('signalWord').value)w+=0.3;
+  if(selectedPictos.size>0)w+=2;
+  if(selectedH.length>0)w+=(hPhraseMode==='code'||selectedH.length<=2)?1:0.7*selectedH.length;
+  if(selectedP.length>0)w+=(pPhraseMode==='code'||selectedP.length<=2)?1:0.7*selectedP.length;
+  if(showSupplier){
+    var sn=document.getElementById('supplierName').value;
+    var sa=document.getElementById('supplierAddress').value;
+    var sp=document.getElementById('supplierPhone').value;
+    if(sn||sa||sp)w+=1;
+  }
+  return Math.max(w,2);
 }
 
 function getFontSizes(w,h){
   var a=w*h;
   var minDim=Math.min(w,h);
+  var contentW=countContentWeight();
+  var spacePerSlot=a/contentW;
+  var boost=1;
+  if(spacePerSlot>1500)boost=Math.min(1.5,spacePerSlot/1500);
+  else if(spacePerSlot<600)boost=Math.max(0.65,spacePerSlot/600);
   var basePicto;
-  if(a<1200){basePicto=Math.min(minDim*0.18,5);return{inst:3,title:4.5,signal:3.5,sec:2.5,body:2.5,foot:2,picto:basePicto}}
-  if(a<1800){basePicto=Math.min(minDim*0.2,7);return{inst:3.5,title:5,signal:4,sec:3,body:3,foot:2.5,picto:basePicto}}
-  if(a<2800){basePicto=Math.min(minDim*0.22,9);return{inst:5,title:7,signal:5.5,sec:4,body:3.5,foot:3,picto:basePicto}}
-  if(a<4000){basePicto=Math.min(minDim*0.25,11);return{inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto}}
-  if(a<8000){basePicto=Math.min(minDim*0.28,14);return{inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto}}
-  if(a<16000){basePicto=Math.min(minDim*0.3,18);return{inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto}}
+  if(a<1200){basePicto=Math.min(minDim*0.18,5);return scale({inst:3,title:4.5,signal:3.5,sec:2.5,body:2.5,foot:2,picto:basePicto},boost)}
+  if(a<1800){basePicto=Math.min(minDim*0.2,7);return scale({inst:3.5,title:5,signal:4,sec:3,body:3,foot:2.5,picto:basePicto},boost)}
+  if(a<2800){basePicto=Math.min(minDim*0.22,9);return scale({inst:5,title:7,signal:5.5,sec:4,body:3.5,foot:3,picto:basePicto},boost)}
+  if(a<4000){basePicto=Math.min(minDim*0.25,11);return scale({inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto},boost)}
+  if(a<8000){basePicto=Math.min(minDim*0.28,14);return scale({inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto},boost)}
+  if(a<16000){basePicto=Math.min(minDim*0.3,18);return scale({inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto},boost)}
   basePicto=Math.min(minDim*0.3,28);
-  return{inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto};
+  return scale({inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto},boost);
+}
+
+function scale(fs,b){
+  return{inst:fs.inst*b,title:fs.title*b,signal:fs.signal*b,sec:fs.sec*b,body:fs.body*b,foot:fs.foot*b,picto:fs.picto*b};
 }
 
 function getPictoSize(fs,w,h){
   var nPictos=selectedPictos.size||1;
   var maxByWidth=(w*0.85)/nPictos;
-  var maxByHeight=h*0.15;
+  var maxByHeight=h*0.18;
   return Math.max(2,Math.min(fs.picto,maxByWidth,maxByHeight));
 }
 
-function getEffectivePhraseMode(type,area){
+function getEffectivePhraseMode(type,area,spacePerSlot){
   var userMode=type==='h'?hPhraseMode:pPhraseMode;
   if(userMode==='code')return 'code';
   var count=type==='h'?selectedH.length:selectedP.length;
   if(area<2400)return 'code';
+  if(spacePerSlot<500)return 'code';
   if(area<4000&&count>2)return 'code';
   if(area<6000&&count>4)return 'code';
   return userMode;
@@ -633,10 +668,12 @@ function updatePreview(){
   var pictosHTML='';
   var pictoSz=getPictoSize(fs,labelW,labelH_);
   if(selectedPictos.size>0){var imgs=PICTOGRAMS.filter(function(p){return selectedPictos.has(p.id)}).map(function(p){return '<img src="'+p.id+'.png" alt="'+p.name+'" style="width:'+pictoSz+'mm;height:'+pictoSz+'mm;">'}).join('');pictosHTML='<div class="label-pictograms" style="gap:'+g*0.3+'mm;padding:'+g*0.3+'mm 0;margin:'+g*0.3+'mm 0;">'+imgs+'</div>'}
-  var hMode=getEffectivePhraseMode('h',area);
+  var contentW=countContentWeight();
+  var spacePerSlot=area/contentW;
+  var hMode=getEffectivePhraseMode('h',area,spacePerSlot);
   var hazHTML='';
   if(selectedH.length>0){var lines=selectedH.map(function(p){return hMode==='code'?p.code:p.code+': '+p.text}).join(hMode==='code'?', ':'<br>');hazHTML='<div style="margin-bottom:'+g*0.3+'mm;"><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Indicaciones de Peligro</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+lines+'</div></div>'}
-  var pMode=getEffectivePhraseMode('p',area);
+  var pMode=getEffectivePhraseMode('p',area,spacePerSlot);
   var precHTML='';
   if(selectedP.length>0){var lines2=selectedP.map(function(p){return pMode==='code'?p.code:p.code+': '+p.text}).join(pMode==='code'?', ':'<br>');precHTML='<div><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Consejos de Prudencia</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+lines2+'</div></div>'}
   var footHTML='';
