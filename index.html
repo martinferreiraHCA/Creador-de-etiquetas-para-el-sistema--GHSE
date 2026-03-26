@@ -569,90 +569,48 @@ function zoomIn(){setZoom(zoom+.15)}
 function zoomOut(){setZoom(zoom-.15)}
 function zoomFit(){var c=document.getElementById('previewContainer');setZoom(Math.min((c.clientWidth-40)/(labelW*3.78),(c.clientHeight-40)/(labelH_*3.78),2.5))}
 
-function getSpacing(w,h){
-  var minDim=Math.min(w,h);
-  var a=w*h;
-  var contentW=countContentWeight();
-  var spacePerSlot=a/contentW;
-  var spacingBoost=1;
-  if(spacePerSlot>1200)spacingBoost=Math.min(1.8,spacePerSlot/1200);
-  var pad=Math.max(0.5,minDim*0.04*spacingBoost);
-  var gap=Math.max(0.15,minDim*0.02*spacingBoost);
+function getSpacing(minDim){
+  var pad=Math.max(0.4,minDim*0.035);
+  var gap=Math.max(0.1,minDim*0.015);
   return{pad:pad,gap:gap};
 }
 
-function countContentWeight(){
-  var w=0;
-  var area=labelW*labelH_;
-  var compact=area<4000;
-  if(document.getElementById('institutionName').value)w+=compact?0.6:1.5;
-  w+=compact?0.8:1.2;
-  if(showCas&&document.getElementById('casNumber').value)w+=0.3;
-  if(document.getElementById('concentration').value)w+=0.2;
-  if(document.getElementById('chemEquation').value)w+=compact?0.3:0.6;
-  if(document.getElementById('signalWord').value)w+=0.3;
-  if(selectedPictos.size>0)w+=compact?1.2:2;
-  if(selectedH.length>0){
-    if(compact)w+=0.6;
-    else w+=(hPhraseMode==='code'||selectedH.length<=2)?1:0.7*selectedH.length;
-  }
-  if(selectedP.length>0){
-    if(compact)w+=0.6;
-    else w+=(pPhraseMode==='code'||selectedP.length<=2)?1:0.7*selectedP.length;
-  }
-  if(showSupplier){
-    var sn=document.getElementById('supplierName').value;
-    var sa=document.getElementById('supplierAddress').value;
-    var sp=document.getElementById('supplierPhone').value;
-    if(sn||sa||sp)w+=compact?0.5:1;
-  }
-  return Math.max(w,2);
-}
-
-function getFontSizes(w,h){
+function getBaseFontSizes(w,h){
   var a=w*h;
   var minDim=Math.min(w,h);
-  var contentW=countContentWeight();
-  var spacePerSlot=a/contentW;
-  var boost=1;
-  if(spacePerSlot>1500)boost=Math.min(1.5,spacePerSlot/1500);
-  else if(spacePerSlot<600)boost=Math.max(0.65,spacePerSlot/600);
   var basePicto;
-  if(a<1200){basePicto=Math.min(minDim*0.18,5);return scale({inst:3,title:4.5,signal:3.5,sec:2.5,body:2.5,foot:2,picto:basePicto},boost)}
-  if(a<1800){basePicto=Math.min(minDim*0.2,7);return scale({inst:3.5,title:5,signal:4,sec:3,body:3,foot:2.5,picto:basePicto},boost)}
-  if(a<2800){basePicto=Math.min(minDim*0.22,9);return scale({inst:5,title:7,signal:5.5,sec:4,body:3.5,foot:3,picto:basePicto},boost)}
-  if(a<4000){basePicto=Math.min(minDim*0.25,11);return scale({inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto},boost)}
-  if(a<8000){basePicto=Math.min(minDim*0.28,14);return scale({inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto},boost)}
-  if(a<16000){basePicto=Math.min(minDim*0.3,18);return scale({inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto},boost)}
+  if(a<1800){basePicto=Math.min(minDim*0.2,7);return{inst:4,title:5.5,signal:4.5,sec:3,body:3,foot:2.5,picto:basePicto}}
+  if(a<4000){basePicto=Math.min(minDim*0.25,11);return{inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto}}
+  if(a<8000){basePicto=Math.min(minDim*0.28,14);return{inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto}}
+  if(a<16000){basePicto=Math.min(minDim*0.3,18);return{inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto}}
   basePicto=Math.min(minDim*0.3,28);
-  return scale({inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto},boost);
+  return{inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto};
 }
 
-function scale(fs,b){
-  return{inst:fs.inst*b,title:fs.title*b,signal:fs.signal*b,sec:fs.sec*b,body:fs.body*b,foot:fs.foot*b,picto:fs.picto*b};
+function scaleFonts(fs,s){
+  return{inst:fs.inst*s,title:fs.title*s,signal:fs.signal*s,sec:fs.sec*s,body:fs.body*s,foot:fs.foot*s,picto:fs.picto*s};
 }
 
 function getPictoSize(fs,w,h){
   var nPictos=selectedPictos.size||1;
-  var maxByWidth=(w*0.85)/nPictos;
-  var maxByHeight=h*0.18;
-  return Math.max(2,Math.min(fs.picto,maxByWidth,maxByHeight));
+  var maxByWidth=(w*0.9)/nPictos;
+  var maxByHeight=h*0.2;
+  return Math.max(1.5,Math.min(fs.picto,maxByWidth,maxByHeight));
 }
 
-function getEffectivePhraseMode(type,area,spacePerSlot){
+function isCompact(){return labelW*labelH_<4000}
+
+function getEffectivePhraseMode(type,area){
   var userMode=type==='h'?hPhraseMode:pPhraseMode;
   if(userMode==='code')return 'code';
-  var count=type==='h'?selectedH.length:selectedP.length;
   if(area<4000)return 'code';
-  if(spacePerSlot<500)return 'code';
+  var count=type==='h'?selectedH.length:selectedP.length;
   if(area<6000&&count>3)return 'code';
   if(area<8000&&count>5)return 'code';
   return userMode;
 }
 
-function isCompact(){return labelW*labelH_<4000}
-
-function updatePreview(){
+function buildLabelHTML(fs,sp,compact,area){
   var inst=document.getElementById('institutionName').value;
   var name=document.getElementById('productName').value||'Nombre del Producto';
   var cas=document.getElementById('casNumber').value;
@@ -662,14 +620,6 @@ function updatePreview(){
   var suppName=document.getElementById('supplierName').value;
   var suppAddr=document.getElementById('supplierAddress').value;
   var suppPhone=document.getElementById('supplierPhone').value;
-  var fs=getFontSizes(labelW,labelH_);
-  var sp=getSpacing(labelW,labelH_);
-  var area=labelW*labelH_;
-  var compact=isCompact();
-  var pxW=labelW*3.78,pxH=labelH_*3.78;
-  var label=document.getElementById('labelPreview');
-  label.style.width=pxW+'px';label.style.height=pxH+'px';
-  label.style.padding=sp.pad+'mm';
   var g=sp.gap;
 
   var instHTML='';
@@ -679,55 +629,76 @@ function updatePreview(){
   }
 
   var sub=[];if(showCas&&cas)sub.push('CAS:'+cas);if(conc)sub.push(conc);
-  var subHTML=sub.length?'<div style="font-size:'+fs.foot+'pt;color:#555;margin-top:'+g*0.15+'mm;">'+sub.join(' | ')+'</div>':'';
-  var chemHTML=chemEq?'<div style="font-size:'+Math.max(fs.body,fs.foot*1.1)+'pt;color:#333;margin-top:'+g*0.15+'mm;font-family:serif;">'+parseChemFormula(chemEq)+'</div>':'';
-
+  var subHTML=sub.length?'<div style="font-size:'+fs.foot+'pt;color:#555;margin-top:'+g*0.1+'mm;">'+sub.join(' | ')+'</div>':'';
+  var chemHTML=chemEq?'<div style="font-size:'+Math.max(fs.body,fs.foot*1.1)+'pt;color:#333;margin-top:'+g*0.1+'mm;font-family:serif;">'+parseChemFormula(chemEq)+'</div>':'';
   var sigHTML=signal?'<div class="label-signal-word '+(signal==='PELIGRO'?'signal-peligro':'signal-atencion')+'" style="font-size:'+fs.signal+'pt;">'+signal+'</div>':'';
 
   var pictosHTML='';
   var pictoSz=getPictoSize(fs,labelW,labelH_);
   if(selectedPictos.size>0){
     var imgs=PICTOGRAMS.filter(function(p){return selectedPictos.has(p.id)}).map(function(p){return '<img src="'+p.id+'.png" alt="'+p.name+'" style="width:'+pictoSz+'mm;height:'+pictoSz+'mm;">'}).join('');
-    if(compact)pictosHTML='<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:'+g*0.2+'mm;margin:'+g*0.2+'mm 0;">'+imgs+'</div>';
+    if(compact)pictosHTML='<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:'+g*0.15+'mm;margin:'+g*0.15+'mm 0;">'+imgs+'</div>';
     else pictosHTML='<div class="label-pictograms" style="gap:'+g*0.3+'mm;padding:'+g*0.3+'mm 0;margin:'+g*0.3+'mm 0;">'+imgs+'</div>';
   }
 
-  var contentW=countContentWeight();
-  var spacePerSlot=area/contentW;
-  var hMode=getEffectivePhraseMode('h',area,spacePerSlot);
-  var pMode=getEffectivePhraseMode('p',area,spacePerSlot);
+  var hMode=getEffectivePhraseMode('h',area);
+  var pMode=getEffectivePhraseMode('p',area);
 
   var hazHTML='';
   if(selectedH.length>0){
     var codes=selectedH.map(function(p){return hMode==='code'?p.code:p.code+': '+p.text});
-    if(compact){
-      hazHTML='<div style="font-size:'+fs.body+'pt;margin-bottom:'+g*0.2+'mm;"><b>H:</b> '+codes.join(', ')+'</div>';
-    }else{
-      hazHTML='<div style="margin-bottom:'+g*0.3+'mm;"><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Indicaciones de Peligro</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+codes.join(hMode==='code'?', ':'<br>')+'</div></div>';
-    }
+    if(compact) hazHTML='<div style="font-size:'+fs.body+'pt;line-height:1.1;"><b>H:</b> '+codes.join(', ')+'</div>';
+    else hazHTML='<div style="margin-bottom:'+g*0.3+'mm;"><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Indicaciones de Peligro</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+codes.join(hMode==='code'?', ':'<br>')+'</div></div>';
   }
 
   var precHTML='';
   if(selectedP.length>0){
     var codes2=selectedP.map(function(p){return pMode==='code'?p.code:p.code+': '+p.text});
-    if(compact){
-      precHTML='<div style="font-size:'+fs.body+'pt;"><b>P:</b> '+codes2.join(', ')+'</div>';
-    }else{
-      precHTML='<div><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Consejos de Prudencia</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+codes2.join(pMode==='code'?', ':'<br>')+'</div></div>';
-    }
+    if(compact) precHTML='<div style="font-size:'+fs.body+'pt;line-height:1.1;"><b>P:</b> '+codes2.join(', ')+'</div>';
+    else precHTML='<div><div class="label-section-title" style="font-size:'+fs.sec+'pt;padding-bottom:'+g*0.15+'mm;margin-bottom:'+g*0.15+'mm;">Consejos de Prudencia</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+codes2.join(pMode==='code'?', ':'<br>')+'</div></div>';
   }
 
   var footHTML='';
   if(showSupplier){
     var fp=[];if(suppName)fp.push('<strong>'+suppName+'</strong>');if(suppAddr)fp.push(suppAddr);if(suppPhone)fp.push('Tel: '+suppPhone);
     if(fp.length){
-      if(compact)footHTML='<div style="font-size:'+fs.foot+'pt;color:#333;border-top:0.5px solid #ccc;padding-top:'+g*0.2+'mm;margin-top:auto;">'+fp.join(' &middot; ')+'</div>';
+      if(compact) footHTML='<div style="font-size:'+fs.foot+'pt;color:#333;border-top:0.5px solid #ccc;padding-top:'+g*0.15+'mm;margin-top:auto;line-height:1.1;">'+fp.join(' &middot; ')+'</div>';
       else footHTML='<div class="label-footer" style="padding-top:'+g*0.3+'mm;"><div class="label-supplier" style="font-size:'+fs.foot+'pt;">'+fp.join(' &middot; ')+'</div></div>';
     }
   }
 
-  var topGap=compact?g*0.2:g*0.4;
-  label.innerHTML=instHTML+'<div class="label-top" style="gap:'+g+'mm;margin-bottom:'+topGap+'mm;"><div><div class="label-product-name" style="font-size:'+fs.title+'pt;">'+name+'</div>'+subHTML+chemHTML+'</div>'+sigHTML+'</div>'+pictosHTML+'<div class="label-body" style="gap:'+g*0.2+'mm;">'+hazHTML+precHTML+'</div>'+footHTML;
+  var topGap=compact?g*0.15:g*0.4;
+  var bodyGap=compact?g*0.1:g*0.3;
+  return instHTML+'<div class="label-top" style="gap:'+g+'mm;margin-bottom:'+topGap+'mm;"><div><div class="label-product-name" style="font-size:'+fs.title+'pt;">'+name+'</div>'+subHTML+chemHTML+'</div>'+sigHTML+'</div>'+pictosHTML+'<div class="label-body" style="gap:'+bodyGap+'mm;">'+hazHTML+precHTML+'</div>'+footHTML;
+}
+
+function updatePreview(){
+  var area=labelW*labelH_;
+  var compact=isCompact();
+  var pxW=labelW*3.78,pxH=labelH_*3.78;
+  var label=document.getElementById('labelPreview');
+  var minDim=Math.min(labelW,labelH_);
+  var sp=getSpacing(minDim);
+  var baseFonts=getBaseFontSizes(labelW,labelH_);
+
+  var lo=0.3,hi=2.0,best=1.0;
+  for(var i=0;i<10;i++){
+    var mid=(lo+hi)/2;
+    var fs=scaleFonts(baseFonts,mid);
+    label.style.width=pxW+'px';label.style.height=pxH+'px';
+    label.style.padding=sp.pad+'mm';
+    label.innerHTML=buildLabelHTML(fs,sp,compact,area);
+    if(label.scrollHeight<=label.clientHeight+1){
+      best=mid;lo=mid;
+    }else{
+      hi=mid;
+    }
+  }
+
+  var fs=scaleFonts(baseFonts,best);
+  label.style.width=pxW+'px';label.style.height=pxH+'px';
+  label.style.padding=sp.pad+'mm';
+  label.innerHTML=buildLabelHTML(fs,sp,compact,area);
 }
 
 function printLabel(){
