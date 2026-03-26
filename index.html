@@ -214,11 +214,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="selected-phrases" id="pSelected"><div class="no-phrases">No se han agregado frases P</div></div>
     </div>
     <div class="section">
-      <div class="section-header"><div class="section-number">7</div><div class="section-title">Proveedor / Fabricante</div></div>
-      <div class="field"><label>Nombre</label><input type="text" id="supplierName" placeholder="Ej: Droguería Industrial S.A." oninput="updatePreview()"></div>
-      <div class="row">
-        <div class="field"><label>Dirección</label><input type="text" id="supplierAddress" placeholder="Av. Italia 1234, Montevideo" oninput="updatePreview()"></div>
-        <div class="field"><label>Teléfono</label><input type="text" id="supplierPhone" placeholder="+598 2XXX XXXX" oninput="updatePreview()"></div>
+      <div class="section-header">
+        <div class="section-number">7</div>
+        <div class="section-title">Proveedor / Fabricante</div>
+        <div class="toggle-row" style="margin-bottom:0;margin-left:auto;">
+          <span class="toggle-label" onclick="toggleSupplier()">En etiqueta</span>
+          <div class="toggle-switch active" id="supplierToggle" onclick="toggleSupplier()"></div>
+        </div>
+      </div>
+      <div id="supplierFields">
+        <div class="field"><label>Nombre</label><input type="text" id="supplierName" placeholder="Ej: Droguería Industrial S.A." oninput="updatePreview()"></div>
+        <div class="row">
+          <div class="field"><label>Dirección</label><input type="text" id="supplierAddress" placeholder="Av. Italia 1234, Montevideo" oninput="updatePreview()"></div>
+          <div class="field"><label>Teléfono</label><input type="text" id="supplierPhone" placeholder="+598 2XXX XXXX" oninput="updatePreview()"></div>
+        </div>
       </div>
     </div>
     <div class="section">
@@ -442,7 +451,7 @@ const P_PHRASES=[
 ];
 
 let selectedPictos=new Set(),selectedH=[],selectedP=[],labelW=80,labelH_=60,zoom=1;
-let showCas=true,hPhraseMode='full',pPhraseMode='full';
+let showCas=true,showSupplier=true,hPhraseMode='full',pPhraseMode='full';
 
 function parseChemFormula(input){
   if(!input)return '';
@@ -467,6 +476,15 @@ function toggleCas(){
   var casInput=document.getElementById('casNumber');
   if(showCas){toggle.classList.add('active');casInput.style.display=''}
   else{toggle.classList.remove('active');casInput.style.display='none'}
+  updatePreview();
+}
+
+function toggleSupplier(){
+  showSupplier=!showSupplier;
+  var toggle=document.getElementById('supplierToggle');
+  var fields=document.getElementById('supplierFields');
+  if(showSupplier){toggle.classList.add('active');fields.style.display=''}
+  else{toggle.classList.remove('active');fields.style.display='none'}
   updatePreview();
 }
 
@@ -553,11 +571,22 @@ function zoomFit(){var c=document.getElementById('previewContainer');setZoom(Mat
 
 function getFontSizes(w,h){
   var a=w*h;
-  if(a<1800)return{inst:5.5,title:7,signal:6,sec:5,body:4.5,foot:4,picto:10};
-  if(a<4000)return{inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:13};
-  if(a<8000)return{inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:16};
-  if(a<16000)return{inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:20};
-  return{inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:28};
+  var minDim=Math.min(w,h);
+  var nPictos=selectedPictos.size||1;
+  var basePicto;
+  if(a<1200){basePicto=Math.min(minDim*0.22,6);return{inst:4.5,title:6,signal:5,sec:4,body:3.5,foot:3,picto:basePicto}}
+  if(a<1800){basePicto=Math.min(minDim*0.25,8);return{inst:5.5,title:7,signal:6,sec:5,body:4.5,foot:4,picto:basePicto}}
+  if(a<4000){basePicto=Math.min(minDim*0.28,11);return{inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto}}
+  if(a<8000){basePicto=Math.min(minDim*0.3,14);return{inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto}}
+  if(a<16000){basePicto=Math.min(minDim*0.3,18);return{inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto}}
+  basePicto=Math.min(minDim*0.3,28);
+  return{inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto};
+}
+
+function getPictoSize(fs,w){
+  var nPictos=selectedPictos.size||1;
+  var maxByWidth=(w*0.85)/nPictos;
+  return Math.min(fs.picto,maxByWidth);
 }
 
 function updatePreview(){
@@ -580,13 +609,14 @@ function updatePreview(){
   var chemHTML=chemEq?'<div style="font-size:'+fs.body*1.1+'pt;color:#333;margin-top:0.3mm;font-family:serif;">'+parseChemFormula(chemEq)+'</div>':'';
   var sigHTML=signal?'<div class="label-signal-word '+(signal==='PELIGRO'?'signal-peligro':'signal-atencion')+'" style="font-size:'+fs.signal+'pt;">'+signal+'</div>':'';
   var pictosHTML='';
-  if(selectedPictos.size>0){var imgs=PICTOGRAMS.filter(function(p){return selectedPictos.has(p.id)}).map(function(p){return '<img src="'+p.id+'.png" alt="'+p.name+'" style="width:'+fs.picto+'mm;height:'+fs.picto+'mm;">'}).join('');pictosHTML='<div class="label-pictograms">'+imgs+'</div>'}
+  var pictoSz=getPictoSize(fs,labelW);
+  if(selectedPictos.size>0){var imgs=PICTOGRAMS.filter(function(p){return selectedPictos.has(p.id)}).map(function(p){return '<img src="'+p.id+'.png" alt="'+p.name+'" style="width:'+pictoSz+'mm;height:'+pictoSz+'mm;">'}).join('');pictosHTML='<div class="label-pictograms">'+imgs+'</div>'}
   var hazHTML='';
   if(selectedH.length>0){var lines=selectedH.map(function(p){return hPhraseMode==='code'?p.code:p.code+': '+p.text}).join(hPhraseMode==='code'?', ':'<br>');hazHTML='<div><div class="label-section-title" style="font-size:'+fs.sec+'pt;">Indicaciones de Peligro</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+lines+'</div></div>'}
   var precHTML='';
   if(selectedP.length>0){var lines2=selectedP.map(function(p){return pPhraseMode==='code'?p.code:p.code+': '+p.text}).join(pPhraseMode==='code'?', ':'<br>');precHTML='<div><div class="label-section-title" style="font-size:'+fs.sec+'pt;">Consejos de Prudencia</div><div class="label-text" style="font-size:'+fs.body+'pt;">'+lines2+'</div></div>'}
-  var fp=[];if(suppName)fp.push('<strong>'+suppName+'</strong>');if(suppAddr)fp.push(suppAddr);if(suppPhone)fp.push('Tel: '+suppPhone);
-  var footHTML=fp.length?'<div class="label-footer"><div class="label-supplier" style="font-size:'+fs.foot+'pt;">'+fp.join(' &middot; ')+'</div></div>':'';
+  var footHTML='';
+  if(showSupplier){var fp=[];if(suppName)fp.push('<strong>'+suppName+'</strong>');if(suppAddr)fp.push(suppAddr);if(suppPhone)fp.push('Tel: '+suppPhone);footHTML=fp.length?'<div class="label-footer"><div class="label-supplier" style="font-size:'+fs.foot+'pt;">'+fp.join(' &middot; ')+'</div></div>':''}
   label.innerHTML=instHTML+'<div class="label-top"><div><div class="label-product-name" style="font-size:'+fs.title+'pt;">'+name+'</div>'+subHTML+chemHTML+'</div>'+sigHTML+'</div>'+pictosHTML+'<div class="label-body">'+hazHTML+precHTML+'</div>'+footHTML;
 }
 
@@ -605,6 +635,7 @@ function resetForm(){
   document.getElementById('hSearch').value='';document.getElementById('pSearch').value='';
   selectedPictos.clear();selectedH=[];selectedP=[];
   showCas=true;document.getElementById('casToggle').classList.add('active');document.getElementById('casNumber').style.display='';
+  showSupplier=true;document.getElementById('supplierToggle').classList.add('active');document.getElementById('supplierFields').style.display='';
   hPhraseMode='full';pPhraseMode='full';
   document.getElementById('hModeCode').classList.remove('active');document.getElementById('hModeFull').classList.add('active');
   document.getElementById('pModeCode').classList.remove('active');document.getElementById('pModeFull').classList.add('active');
