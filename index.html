@@ -123,6 +123,26 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;z-index:200;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
+.btn-save{background:rgba(74,108,247,.12);color:var(--accent);border:1px solid rgba(74,108,247,.25)}
+.btn-save:hover{background:rgba(74,108,247,.22)}
+.btn-export{background:rgba(240,160,48,.12);color:var(--amber);border:1px solid rgba(240,160,48,.25)}
+.btn-export:hover{background:rgba(240,160,48,.22)}
+.btn-help{background:rgba(154,156,176,.1);color:var(--text2);border:1px solid var(--border);min-width:34px;padding:9px 10px}
+.btn-help:hover{background:var(--surface3);color:var(--text)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:640px;width:90%;max-height:80vh;overflow-y:auto;padding:28px;position:relative;animation:fadeIn .25s ease}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text)}
+.modal h3{font-size:13px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+.modal p,.modal li{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px}
+.modal ul{padding-left:18px;margin-bottom:10px}
+.modal kbd{background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;font-family:'Space Mono',monospace;color:var(--text)}
+.modal-close{position:absolute;top:14px;right:14px;width:30px;height:30px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s}
+.modal-close:hover{background:var(--surface3);color:var(--text)}
+.paste-area{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;resize:vertical;min-height:36px;outline:none;transition:border-color .2s,box-shadow .2s;margin-top:6px}
+.paste-area:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.paste-hint{font-size:10px;color:var(--text3);margin-top:3px}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:1100px){.app{grid-template-columns:1fr}.panel{max-height:none}.panel-form{border-right:none;border-bottom:1px solid var(--border)}.panel-preview{min-height:500px}}
 @media(max-width:600px){.header{padding:10px 14px;flex-wrap:wrap;gap:8px}.panel{padding:14px}.picto-grid{grid-template-columns:repeat(3,1fr)}.row,.row-3{grid-template-columns:1fr}}
 </style>
@@ -134,7 +154,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <h1>Etiquetas SGA <span>/ GHS</span></h1>
   </div>
   <div class="header-actions">
+    <button class="btn btn-help" onclick="openHelp()" title="Ayuda">?</button>
     <button class="btn btn-example" onclick="loadExample()">&#x2726; Ejemplo</button>
+    <button class="btn btn-save" onclick="saveImage()">&#x1F4F7; Imagen</button>
+    <button class="btn btn-export" onclick="exportExcel()">&#x1F4CB; Excel</button>
+    <button class="btn btn-secondary" onclick="saveProject()">&#x1F4BE; Guardar</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('loadFileInput').click()">&#x1F4C2; Cargar</button>
+    <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProjectFile(event)">
     <button class="btn btn-secondary" onclick="resetForm()">Limpiar</button>
     <button class="btn btn-primary" onclick="printLabel()">&#x2399; Imprimir</button>
   </div>
@@ -200,6 +226,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="phrase-dropdown" id="hDropdown"></div>
       </div>
       <div class="selected-phrases" id="hSelected"><div class="no-phrases">No se han agregado frases H</div></div>
+      <textarea class="paste-area" id="hPaste" placeholder="Pegar frases H aquí: ej. H314, H331, H335 o H314+H331" rows="1" oninput="parsePastedPhrases('h')"></textarea>
+      <div class="paste-hint">Pegá códigos separados por comas, espacios o +. Se detectan automáticamente.</div>
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">6</div><div class="section-title">Consejos de Prudencia (Frases P)</div></div>
@@ -214,6 +242,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="phrase-dropdown" id="pDropdown"></div>
       </div>
       <div class="selected-phrases" id="pSelected"><div class="no-phrases">No se han agregado frases P</div></div>
+      <textarea class="paste-area" id="pPaste" placeholder="Pegar frases P aquí: ej. P260, P280, P305+P351+P338" rows="1" oninput="parsePastedPhrases('p')"></textarea>
+      <div class="paste-hint">Pegá códigos separados por comas, espacios o +. Se detectan automáticamente.</div>
     </div>
     <div class="section">
       <div class="section-header">
@@ -268,6 +298,41 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="modal-overlay" id="helpModal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeHelp()">&times;</button>
+    <h2>Como usar el Generador de Etiquetas SGA/GHS</h2>
+    <h3>1. Completar los datos</h3>
+    <p>Llena los campos del panel izquierdo de arriba hacia abajo:</p>
+    <ul>
+      <li><strong>Institucion:</strong> El nombre de tu colegio o laboratorio que aparece como encabezado.</li>
+      <li><strong>Producto:</strong> Nombre del producto quimico, formula (se convierte automaticamente: H2SO4 → H₂SO₄), concentracion y opcionalmente el numero CAS (se puede desactivar con el toggle).</li>
+      <li><strong>Palabra de advertencia:</strong> PELIGRO (rojo) o ATENCION (naranja) segun la clasificacion.</li>
+      <li><strong>Pictogramas:</strong> Hace clic en los iconos GHS correspondientes. Se pueden seleccionar varios.</li>
+      <li><strong>Frases H y P:</strong> Busca por codigo o por palabra clave en el buscador. Tambien podes <strong>pegar</strong> una lista de codigos (ej: "H314, H331, H335") en el campo de pegado y se detectan automaticamente.</li>
+      <li><strong>Proveedor:</strong> Datos del fabricante. Se puede desactivar con el toggle si no se necesita en la etiqueta.</li>
+      <li><strong>Tamano:</strong> Elegir un preset (vial, frasco, botella) o poner medidas personalizadas en mm.</li>
+    </ul>
+    <h3>2. Vista previa en tiempo real</h3>
+    <p>El panel derecho muestra como queda la etiqueta. Usa los botones + y - para hacer zoom. La etiqueta se adapta automaticamente al tamano: en etiquetas chicas las frases se abrevian a solo codigos (H: H314, P: P280).</p>
+    <h3>3. Modos de frases H y P</h3>
+    <p>Cada seccion tiene botones <kbd>Solo codigo</kbd> y <kbd>Frase completa</kbd>. En etiquetas grandes se muestra el texto completo; en chicas se cambia a codigos automaticamente para que entre todo.</p>
+    <h3>4. Guardar y exportar</h3>
+    <ul>
+      <li><strong>&#x1F4F7; Imagen:</strong> Descarga la etiqueta como imagen PNG de alta resolucion.</li>
+      <li><strong>&#x1F4CB; Excel:</strong> Exporta todos los datos de la etiqueta a un archivo CSV que se abre en Excel, Google Sheets o LibreOffice para editar.</li>
+      <li><strong>&#x1F4BE; Guardar:</strong> Guarda el proyecto actual como archivo JSON y en el cache del navegador. Podes retomar el trabajo despues.</li>
+      <li><strong>&#x1F4C2; Cargar:</strong> Carga un proyecto guardado previamente desde un archivo JSON.</li>
+      <li><strong>&#x2399; Imprimir:</strong> Envia la etiqueta a la impresora. Podes elegir cuantas copias.</li>
+    </ul>
+    <h3>5. Pegar frases H/P</h3>
+    <p>Debajo de cada buscador de frases hay un campo de pegado. Podes copiar codigos de una ficha de seguridad (SDS) y pegarlos ahi. El sistema detecta automaticamente los codigos validos (H200-H420, P101-P503) y los agrega.</p>
+    <h3>6. Formula quimica</h3>
+    <p>Escribir la formula normalmente: <kbd>H2SO4</kbd> se convierte en H₂SO₄. Usar <kbd>-></kbd> para flechas de reaccion (→) y <kbd>^</kbd> para superindices (Fe^3+ → Fe³⁺).</p>
+    <h3>7. Progreso automatico</h3>
+    <p>El sistema guarda automaticamente tu trabajo en el cache del navegador. Si cerras y volves a abrir, tu ultimo progreso se recupera automaticamente.</p>
+  </div>
+</div>
 <script>
 const PICTOGRAMS=[
 {id:'GHS01',name:'Explosivo',svg:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,2 98,50 50,98 2,50" fill="#fff" stroke="#ff0000" stroke-width="3"/><g transform="translate(25,22) scale(0.5)"><circle cx="50" cy="60" r="18" fill="#000"/><path d="M32,60 L15,30 M50,42 L45,15 M68,60 L85,30 M40,48 L25,20 M60,48 L75,20 M35,55 L10,50 M65,55 L90,50" stroke="#000" stroke-width="4" stroke-linecap="round"/></g></svg>'},
@@ -748,7 +813,218 @@ function loadExample(){
 
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
 
-window.addEventListener('DOMContentLoaded',init);
+/* ===== PEGAR FRASES H/P ===== */
+
+function parsePastedPhrases(type){
+  var textarea=document.getElementById(type==='h'?'hPaste':'pPaste');
+  var raw=textarea.value.toUpperCase();
+  var db=type==='h'?H_PHRASES:P_PHRASES;
+  var selected=type==='h'?selectedH:selectedP;
+  var existingCodes=new Set(selected.map(function(s){return s.code}));
+  var pattern=type==='h'?/H\d{3}(?:\+H\d{3})*/g:/P\d{3}(?:\+P\d{3}(?:\+P\d{3})?)?/g;
+  var matches=raw.match(pattern);
+  if(!matches)return;
+  var added=0;
+  matches.forEach(function(code){
+    if(existingCodes.has(code))return;
+    var phrase=db.find(function(p){return p.code===code});
+    if(phrase){selected.push({code:phrase.code,text:phrase.text,cat:phrase.cat});existingCodes.add(code);added++}
+  });
+  if(added>0){
+    textarea.value='';
+    renderSelectedPhrases(type);updatePreview();
+    showToast(added+' frase'+(added>1?'s':'')+' '+type.toUpperCase()+' agregada'+(added>1?'s':''));
+  }
+}
+
+/* ===== GUARDAR IMAGEN ===== */
+
+function saveImage(){
+  var label=document.getElementById('labelPreview');
+  var pxW=labelW*3.78,pxH=labelH_*3.78;
+  var scale=3;
+  var canvas=document.createElement('canvas');
+  canvas.width=pxW*scale;canvas.height=pxH*scale;
+  var ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,pxW,pxH);
+  var data='<svg xmlns="http://www.w3.org/2000/svg" width="'+pxW+'" height="'+pxH+'"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">'+getLabelHTMLForExport()+'</div></foreignObject></svg>';
+  var img=new Image();
+  var blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  img.onload=function(){
+    ctx.drawImage(img,0,0);URL.revokeObjectURL(url);
+    canvas.toBlob(function(b){
+      var a=document.createElement('a');a.href=URL.createObjectURL(b);
+      a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
+      a.click();URL.revokeObjectURL(a.href);showToast('Imagen PNG descargada');
+    },'image/png');
+  };
+  img.onerror=function(){
+    URL.revokeObjectURL(url);
+    saveImageFallback();
+  };
+  img.src=url;
+}
+
+function saveImageFallback(){
+  var label=document.getElementById('labelPreview');
+  var canvas=document.createElement('canvas');
+  var pxW=labelW*3.78,pxH=labelH_*3.78;
+  var scale=3;canvas.width=pxW*scale;canvas.height=pxH*scale;
+  var ctx=canvas.getContext('2d');ctx.scale(scale,scale);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,pxW,pxH);
+  ctx.strokeStyle='#cc0000';ctx.lineWidth=2.5;ctx.strokeRect(1,1,pxW-2,pxH-2);
+  ctx.fillStyle='#000';ctx.font='bold 12px DM Sans,Arial';ctx.textAlign='center';
+  ctx.fillText(document.getElementById('productName').value||'Producto',pxW/2,pxH/2-6);
+  ctx.font='8px DM Sans,Arial';ctx.fillStyle='#555';
+  ctx.fillText('Usar Imprimir para mejor calidad',pxW/2,pxH/2+10);
+  canvas.toBlob(function(b){
+    var a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download='etiqueta.png';a.click();URL.revokeObjectURL(a.href);
+    showToast('Imagen basica descargada (usar Imprimir para alta calidad)');
+  },'image/png');
+}
+
+function getLabelHTMLForExport(){
+  var label=document.getElementById('labelPreview');
+  var styles='<style>*{margin:0;padding:0;box-sizing:border-box;font-family:DM Sans,Arial,sans-serif}';
+  styles+='body{background:#fff}</style>';
+  return styles+'<div style="width:'+labelW*3.78+'px;height:'+labelH_*3.78+'px;border:2.5px solid #cc0000;padding:3mm;display:flex;flex-direction:column;overflow:hidden;background:#fff;color:#000;">'+label.innerHTML+'</div>';
+}
+
+/* ===== EXPORTAR EXCEL (CSV) ===== */
+
+function exportExcel(){
+  var rows=[
+    ['Campo','Valor'],
+    ['Institucion',document.getElementById('institutionName').value],
+    ['Producto',document.getElementById('productName').value],
+    ['Formula Quimica',document.getElementById('chemEquation').value],
+    ['N CAS',document.getElementById('casNumber').value],
+    ['Concentracion',document.getElementById('concentration').value],
+    ['Palabra de Advertencia',document.getElementById('signalWord').value],
+    ['Pictogramas',Array.from(selectedPictos).join(', ')],
+    ['Frases H (codigos)',selectedH.map(function(p){return p.code}).join(', ')],
+    ['Frases H (texto)',selectedH.map(function(p){return p.code+': '+p.text}).join(' | ')],
+    ['Frases P (codigos)',selectedP.map(function(p){return p.code}).join(', ')],
+    ['Frases P (texto)',selectedP.map(function(p){return p.code+': '+p.text}).join(' | ')],
+    ['Proveedor - Nombre',document.getElementById('supplierName').value],
+    ['Proveedor - Direccion',document.getElementById('supplierAddress').value],
+    ['Proveedor - Telefono',document.getElementById('supplierPhone').value],
+    ['Tamano etiqueta (mm)',labelW+'x'+labelH_],
+    ['Mostrar CAS',showCas?'Si':'No'],
+    ['Mostrar Proveedor',showSupplier?'Si':'No'],
+    ['Modo Frases H',hPhraseMode],
+    ['Modo Frases P',pPhraseMode]
+  ];
+  var bom='\uFEFF';
+  var csv=bom+rows.map(function(r){return r.map(function(c){return '"'+(c||'').replace(/"/g,'""')+'"'}).join(',')}).join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.csv';
+  a.click();URL.revokeObjectURL(a.href);showToast('Archivo CSV/Excel descargado');
+}
+
+/* ===== GUARDAR / CARGAR PROYECTO ===== */
+
+function getProjectData(){
+  return{
+    version:1,
+    institutionName:document.getElementById('institutionName').value,
+    productName:document.getElementById('productName').value,
+    chemEquation:document.getElementById('chemEquation').value,
+    casNumber:document.getElementById('casNumber').value,
+    concentration:document.getElementById('concentration').value,
+    signalWord:document.getElementById('signalWord').value,
+    selectedPictos:Array.from(selectedPictos),
+    selectedH:selectedH.map(function(p){return p.code}),
+    selectedP:selectedP.map(function(p){return p.code}),
+    supplierName:document.getElementById('supplierName').value,
+    supplierAddress:document.getElementById('supplierAddress').value,
+    supplierPhone:document.getElementById('supplierPhone').value,
+    labelW:labelW,labelH:labelH_,
+    showCas:showCas,showSupplier:showSupplier,
+    hPhraseMode:hPhraseMode,pPhraseMode:pPhraseMode
+  };
+}
+
+function applyProjectData(d){
+  document.getElementById('institutionName').value=d.institutionName||'';
+  document.getElementById('productName').value=d.productName||'';
+  document.getElementById('chemEquation').value=d.chemEquation||'';
+  updateChemPreview();
+  document.getElementById('casNumber').value=d.casNumber||'';
+  document.getElementById('concentration').value=d.concentration||'';
+  document.getElementById('signalWord').value=d.signalWord||'';
+  selectedPictos.clear();document.querySelectorAll('.picto-item').forEach(function(el){el.classList.remove('selected')});
+  (d.selectedPictos||[]).forEach(function(id){selectedPictos.add(id);var el=document.getElementById('picto-'+id);if(el)el.classList.add('selected')});
+  selectedH=(d.selectedH||[]).map(function(c){return H_PHRASES.find(function(p){return p.code===c})}).filter(Boolean);
+  selectedP=(d.selectedP||[]).map(function(c){return P_PHRASES.find(function(p){return p.code===c})}).filter(Boolean);
+  renderSelectedPhrases('h');renderSelectedPhrases('p');
+  document.getElementById('supplierName').value=d.supplierName||'';
+  document.getElementById('supplierAddress').value=d.supplierAddress||'';
+  document.getElementById('supplierPhone').value=d.supplierPhone||'';
+  showCas=d.showCas!==false;
+  document.getElementById('casToggle').classList.toggle('active',showCas);
+  document.getElementById('casNumber').style.display=showCas?'':'none';
+  showSupplier=d.showSupplier!==false;
+  document.getElementById('supplierToggle').classList.toggle('active',showSupplier);
+  document.getElementById('supplierFields').style.display=showSupplier?'':'none';
+  hPhraseMode=d.hPhraseMode||'full';pPhraseMode=d.pPhraseMode||'full';
+  document.getElementById('hModeCode').classList.toggle('active',hPhraseMode==='code');
+  document.getElementById('hModeFull').classList.toggle('active',hPhraseMode==='full');
+  document.getElementById('pModeCode').classList.toggle('active',pPhraseMode==='code');
+  document.getElementById('pModeFull').classList.toggle('active',pPhraseMode==='full');
+  setSize(d.labelW||80,d.labelH||60,document.querySelector('[data-w="'+(d.labelW||80)+'"]'));
+  updatePreview();
+}
+
+function saveProject(){
+  var data=getProjectData();
+  localStorage.setItem('sga_project',JSON.stringify(data));
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='etiqueta_'+((document.getElementById('productName').value||'proyecto').replace(/\s+/g,'_'))+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+  showToast('Proyecto guardado (archivo + cache)');
+}
+
+function loadProjectFile(event){
+  var file=event.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{var d=JSON.parse(e.target.result);applyProjectData(d);showToast('Proyecto cargado: '+(d.productName||'sin nombre'))}
+    catch(err){showToast('Error: archivo no valido')}
+  };
+  reader.readAsText(file);event.target.value='';
+}
+
+function autoSave(){
+  try{localStorage.setItem('sga_project',JSON.stringify(getProjectData()))}catch(e){}
+}
+
+function autoLoad(){
+  try{
+    var saved=localStorage.getItem('sga_project');
+    if(saved){var d=JSON.parse(saved);if(d.productName||d.institutionName){applyProjectData(d);return true}}
+  }catch(e){}
+  return false;
+}
+
+/* ===== AYUDA ===== */
+
+function openHelp(){document.getElementById('helpModal').classList.add('open')}
+function closeHelp(){document.getElementById('helpModal').classList.remove('open')}
+
+/* ===== INIT ===== */
+
+window.addEventListener('DOMContentLoaded',function(){
+  init();
+  if(!autoLoad())updatePreview();
+  setInterval(autoSave,5000);
+});
 window.addEventListener('resize',function(){setTimeout(zoomFit,100)});
 </script>
 </body>
