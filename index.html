@@ -842,55 +842,104 @@ function parsePastedPhrases(type){
 function saveImage(){
   var label=document.getElementById('labelPreview');
   var pxW=labelW*3.78,pxH=labelH_*3.78;
-  var scale=3;
-  var canvas=document.createElement('canvas');
-  canvas.width=pxW*scale;canvas.height=pxH*scale;
-  var ctx=canvas.getContext('2d');
-  ctx.scale(scale,scale);
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,pxW,pxH);
-  var data='<svg xmlns="http://www.w3.org/2000/svg" width="'+pxW+'" height="'+pxH+'"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">'+getLabelHTMLForExport()+'</div></foreignObject></svg>';
-  var img=new Image();
-  var blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
-  var url=URL.createObjectURL(blob);
-  img.onload=function(){
-    ctx.drawImage(img,0,0);URL.revokeObjectURL(url);
-    canvas.toBlob(function(b){
-      var a=document.createElement('a');a.href=URL.createObjectURL(b);
-      a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
-      a.click();URL.revokeObjectURL(a.href);showToast('Imagen PNG descargada');
-    },'image/png');
-  };
-  img.onerror=function(){
-    URL.revokeObjectURL(url);
-    saveImageFallback();
-  };
-  img.src=url;
+  var scale=4;
+
+  // Primero convertir todas las imágenes del label a data URLs
+  var imgs=label.querySelectorAll('img');
+  var promises=[];
+  imgs.forEach(function(img){
+    if(img.src&&!img.src.startsWith('data:')){
+      promises.push(convertImgToDataURL(img));
+    }
+  });
+
+  Promise.all(promises).then(function(dataURLs){
+    // Clonar el label con las imágenes ya convertidas
+    var clone=label.cloneNode(true);
+    var cloneImgs=clone.querySelectorAll('img');
+    var idx=0;
+    cloneImgs.forEach(function(cimg){
+      if(idx<dataURLs.length&&dataURLs[idx])cimg.setAttribute('src',dataURLs[idx]);
+      idx++;
+    });
+
+    // Obtener todos los estilos computados inline
+    var cssText=getComputedCSS();
+    var htmlContent=cssText+'<div style="width:'+pxW+'px;height:'+pxH+'px;'+getInlineStyles(label)+'">'+clone.innerHTML+'</div>';
+
+    var svgData='<svg xmlns="http://www.w3.org/2000/svg" width="'+(pxW*scale)+'" height="'+(pxH*scale)+'">'
+      +'<foreignObject width="'+pxW+'" height="'+pxH+'" transform="scale('+scale+')">'
+      +'<div xmlns="http://www.w3.org/1999/xhtml">'+htmlContent+'</div>'
+      +'</foreignObject></svg>';
+
+    var svgBlob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
+    var svgUrl=URL.createObjectURL(svgBlob);
+    var canvas=document.createElement('canvas');
+    canvas.width=pxW*scale;canvas.height=pxH*scale;
+    var ctx=canvas.getContext('2d');
+    var img2=new Image();
+    img2.onload=function(){
+      ctx.drawImage(img2,0,0);
+      URL.revokeObjectURL(svgUrl);
+      canvas.toBlob(function(b){
+        var a=document.createElement('a');a.href=URL.createObjectURL(b);
+        a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
+        a.click();URL.revokeObjectURL(a.href);showToast('Imagen PNG descargada');
+      },'image/png');
+    };
+    img2.onerror=function(){
+      URL.revokeObjectURL(svgUrl);
+      saveImageFallback();
+    };
+    img2.src=svgUrl;
+  }).catch(function(){saveImageFallback()});
+}
+
+function convertImgToDataURL(img){
+  return new Promise(function(resolve){
+    var canvas=document.createElement('canvas');
+    canvas.width=img.naturalWidth||100;canvas.height=img.naturalHeight||100;
+    var ctx=canvas.getContext('2d');
+    var tempImg=new Image();
+    tempImg.crossOrigin='anonymous';
+    tempImg.onload=function(){ctx.drawImage(tempImg,0,0);resolve(canvas.toDataURL('image/png'))};
+    tempImg.onerror=function(){resolve(null)};
+    tempImg.src=img.src;
+  });
+}
+
+function getInlineStyles(el){
+  var s=el.getAttribute('style')||'';
+  var cs=window.getComputedStyle(el);
+  if(!s.includes('background'))s+='background:#fff;';
+  if(!s.includes('border'))s+='border:2.5px solid #cc0000;';
+  if(!s.includes('font-family'))s+='font-family:DM Sans,Arial,Helvetica,sans-serif;';
+  if(!s.includes('display'))s+='display:flex;flex-direction:column;';
+  if(!s.includes('overflow'))s+='overflow:hidden;';
+  if(!s.includes('color:'))s+='color:#000;';
+  return s;
+}
+
+function getComputedCSS(){
+  return '<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'.label-institution{text-align:center;font-weight:700;color:#000;border-bottom:1.5px solid #cc0000;padding-bottom:1mm;margin-bottom:1.5mm;text-transform:uppercase;letter-spacing:.5px;font-family:DM Sans,Arial,sans-serif}'
+    +'.label-top{display:flex;justify-content:space-between;align-items:flex-start;gap:2mm;margin-bottom:1.5mm}'
+    +'.label-product-name{font-weight:700;color:#000;line-height:1.15;flex:1;font-family:DM Sans,Arial,sans-serif}'
+    +'.label-signal-word{font-weight:700;text-transform:uppercase;text-align:right;white-space:nowrap;font-family:DM Sans,Arial,sans-serif}'
+    +'.signal-peligro{color:#cc0000}.signal-atencion{color:#e68a00}'
+    +'.label-pictograms{display:flex;flex-wrap:wrap;gap:1mm;justify-content:center;margin-bottom:1.5mm;padding:1mm 0;border-top:1px solid #ccc;border-bottom:1px solid #ccc}'
+    +'.label-pictograms img{flex-shrink:0}'
+    +'.label-body{flex:1;display:flex;flex-direction:column;gap:1mm;overflow:hidden;font-family:DM Sans,Arial,sans-serif}'
+    +'.label-section-title{font-weight:700;text-transform:uppercase;color:#000;border-bottom:1px solid #000;padding-bottom:.3mm;margin-bottom:.3mm;font-family:DM Sans,Arial,sans-serif}'
+    +'.label-text{color:#222;line-height:1.25;font-family:DM Sans,Arial,sans-serif}'
+    +'.label-footer{margin-top:auto;padding-top:1mm;border-top:1px solid #ccc}'
+    +'.label-supplier{color:#333;line-height:1.2;font-family:DM Sans,Arial,sans-serif}'
+    +'</style>';
 }
 
 function saveImageFallback(){
-  var label=document.getElementById('labelPreview');
-  var canvas=document.createElement('canvas');
-  var pxW=labelW*3.78,pxH=labelH_*3.78;
-  var scale=3;canvas.width=pxW*scale;canvas.height=pxH*scale;
-  var ctx=canvas.getContext('2d');ctx.scale(scale,scale);
-  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,pxW,pxH);
-  ctx.strokeStyle='#cc0000';ctx.lineWidth=2.5;ctx.strokeRect(1,1,pxW-2,pxH-2);
-  ctx.fillStyle='#000';ctx.font='bold 12px DM Sans,Arial';ctx.textAlign='center';
-  ctx.fillText(document.getElementById('productName').value||'Producto',pxW/2,pxH/2-6);
-  ctx.font='8px DM Sans,Arial';ctx.fillStyle='#555';
-  ctx.fillText('Usar Imprimir para mejor calidad',pxW/2,pxH/2+10);
-  canvas.toBlob(function(b){
-    var a=document.createElement('a');a.href=URL.createObjectURL(b);
-    a.download='etiqueta.png';a.click();URL.revokeObjectURL(a.href);
-    showToast('Imagen basica descargada (usar Imprimir para alta calidad)');
-  },'image/png');
-}
-
-function getLabelHTMLForExport(){
-  var label=document.getElementById('labelPreview');
-  var styles='<style>*{margin:0;padding:0;box-sizing:border-box;font-family:DM Sans,Arial,sans-serif}';
-  styles+='body{background:#fff}</style>';
-  return styles+'<div style="width:'+labelW*3.78+'px;height:'+labelH_*3.78+'px;border:2.5px solid #cc0000;padding:3mm;display:flex;flex-direction:column;overflow:hidden;background:#fff;color:#000;">'+label.innerHTML+'</div>';
+  showToast('No se pudo generar la imagen. Usa Imprimir > Guardar como PDF.');
 }
 
 /* ===== EXPORTAR EXCEL (CSV) ===== */
