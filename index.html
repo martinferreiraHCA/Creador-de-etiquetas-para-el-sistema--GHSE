@@ -144,6 +144,25 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .paste-area:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
 .paste-hint{font-size:10px;color:var(--text3);margin-top:3px}
 .header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.section-hint{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.section-hint strong{color:var(--text2)}
+.section-hint a{color:var(--accent);text-decoration:underline;cursor:pointer}
+.welcome-banner{background:linear-gradient(135deg,rgba(74,108,247,.08),rgba(52,199,89,.06));border:1px solid rgba(74,108,247,.2);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;animation:fadeIn .5s ease}
+.welcome-banner h2{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+.welcome-banner p{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:4px}
+.welcome-banner .welcome-tip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);font-weight:600;margin-top:4px;cursor:pointer}
+.welcome-banner .welcome-tip:hover{text-decoration:underline}
+.welcome-dismiss{background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;float:right;padding:2px 6px}
+.welcome-dismiss:hover{color:var(--text)}
+.modal .step-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px}
+.modal .step-box h4{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.modal .step-box h4 .step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--accent);color:#fff;border-radius:6px;font-size:11px;font-weight:700;flex-shrink:0}
+.modal .step-box p{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:2px}
+.modal .tip-box{background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.2);border-radius:var(--radius-sm);padding:10px 14px;margin:10px 0;font-size:12px;color:var(--text2);line-height:1.5}
+.modal .tip-box strong{color:var(--green)}
+.modal .warn-box{background:rgba(240,160,48,.08);border:1px solid rgba(240,160,48,.2);border-radius:var(--radius-sm);padding:10px 14px;margin:10px 0;font-size:12px;color:var(--text2);line-height:1.5}
+.modal .warn-box strong{color:var(--amber)}
+.modal .example-block{background:var(--surface3);border-radius:var(--radius-sm);padding:10px 14px;margin:8px 0;font-family:'Space Mono',monospace;font-size:12px;color:var(--text);line-height:1.5}
 @media(max-width:1100px){.app{grid-template-columns:1fr}.panel{max-height:none}.panel-form{border-right:none;border-bottom:1px solid var(--border)}.panel-preview{min-height:500px}}
 @media(max-width:600px){.header{padding:10px 14px;flex-wrap:wrap;gap:8px}.panel{padding:14px}.picto-grid{grid-template-columns:repeat(3,1fr)}.row,.row-3{grid-template-columns:1fr}}
 </style>
@@ -168,16 +187,25 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </header>
 <div class="app">
   <div class="panel panel-form">
+    <div class="welcome-banner" id="welcomeBanner">
+      <button class="welcome-dismiss" onclick="document.getElementById('welcomeBanner').style.display='none';localStorage.setItem('sga_welcome_dismissed','1')">Cerrar</button>
+      <h2>Bienvenido al Generador de Etiquetas SGA/GHS</h2>
+      <p>Este sistema te permite crear <strong>etiquetas de seguridad para productos quimicos</strong> segun el Sistema Globalmente Armonizado (SGA/GHS), el estandar internacional para la comunicacion de peligros.</p>
+      <p>Completa los campos de arriba hacia abajo. La etiqueta se actualiza en tiempo real en el panel derecho. Cuando termines, podes imprimir, guardar como imagen o exportar a Excel.</p>
+      <span class="welcome-tip" onclick="openHelp()">Ver guia completa paso a paso &rarr;</span>
+    </div>
     <div class="section">
-      <div class="section-header"><div class="section-number">1</div><div class="section-title">Institución</div></div>
+      <div class="section-header"><div class="section-number">1</div><div class="section-title">Institucion</div></div>
+      <div class="section-hint">El nombre de tu colegio o laboratorio que aparecera como <strong>encabezado</strong> en la parte superior de la etiqueta.</div>
       <div class="field">
-        <label>Nombre de la institución (encabezado de la etiqueta)</label>
+        <label>Nombre de la institucion</label>
         <input type="text" id="institutionName" placeholder="Ej: Colegio Hans Christian Andersen" oninput="updatePreview()">
       </div>
     </div>
     <div class="section">
-      <div class="section-header"><div class="section-number">2</div><div class="section-title">Identificación del Producto</div></div>
-      <div class="field"><label>Nombre del producto</label><input type="text" id="productName" placeholder="Ej: Ácido Clorhídrico" oninput="updatePreview()"></div>
+      <div class="section-header"><div class="section-number">2</div><div class="section-title">Identificacion del Producto</div></div>
+      <div class="section-hint">Ingresa el <strong>nombre comercial o cientifico</strong> del producto quimico, su formula, concentracion y opcionalmente el numero CAS (identificador universal del producto).</div>
+      <div class="field"><label>Nombre del producto</label><input type="text" id="productName" placeholder="Ej: Acido Clorhidrico, Etanol, Hipoclorito de Sodio..." oninput="updatePreview()"></div>
       <div class="field">
         <label>Ecuación / Fórmula Química</label>
         <div class="chem-eq-container">
@@ -202,6 +230,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">3</div><div class="section-title">Palabra de Advertencia</div></div>
+      <div class="section-hint">Segun el SGA, cada producto tiene una <strong>palabra de advertencia</strong>: <strong>PELIGRO</strong> (para los mas graves) o <strong>ATENCION</strong> (para peligros menores). Esta informacion se encuentra en la <strong>Ficha de Datos de Seguridad (FDS/SDS)</strong> del producto.</div>
       <div class="field">
         <select id="signalWord" onchange="updatePreview()">
           <option value="">— Sin palabra de advertencia —</option>
@@ -212,10 +241,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">4</div><div class="section-title">Pictogramas de Peligro</div></div>
+      <div class="section-hint">Los pictogramas son los <strong>rombos rojos con simbolos</strong> que indican el tipo de peligro. Hace clic en los que correspondan a tu producto (podes seleccionar varios). Encontralos en la <strong>seccion 2</strong> de la Ficha de Datos de Seguridad (FDS).</div>
       <div class="picto-grid" id="pictoGrid"></div>
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">5</div><div class="section-title">Indicaciones de Peligro (Frases H)</div></div>
+      <div class="section-hint">Las <strong>frases H</strong> (Hazard) describen los peligros del producto. Ej: <strong>H314</strong> = "Provoca quemaduras graves". Podes buscar por codigo o por palabra clave, o <strong>pegar una lista</strong> de codigos copiados de la FDS. Estan en la <strong>seccion 2</strong> de la FDS.</div>
       <div class="phrase-mode-row">
         <span style="font-size:10px;color:var(--text3);">En etiqueta:</span>
         <button class="phrase-mode-btn" id="hModeCode" onclick="setHPhraseMode('code')">Solo código</button>
@@ -232,6 +263,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">6</div><div class="section-title">Consejos de Prudencia (Frases P)</div></div>
+      <div class="section-hint">Las <strong>frases P</strong> (Precaution) son las medidas de seguridad recomendadas. Ej: <strong>P280</strong> = "Usar guantes/ropa de proteccion". Tambien estan en la <strong>seccion 2</strong> de la FDS. Podes pegar una lista de codigos.</div>
       <div class="phrase-mode-row">
         <span style="font-size:10px;color:var(--text3);">En etiqueta:</span>
         <button class="phrase-mode-btn" id="pModeCode" onclick="setPPhraseMode('code')">Solo código</button>
@@ -250,11 +282,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="section-header">
         <div class="section-number">7</div>
         <div class="section-title">Proveedor / Fabricante</div>
+
         <div class="toggle-row" style="margin-bottom:0;margin-left:auto;">
           <span class="toggle-label" onclick="toggleSupplier()">En etiqueta</span>
           <div class="toggle-switch active" id="supplierToggle" onclick="toggleSupplier()"></div>
         </div>
       </div>
+      <div class="section-hint">Datos del fabricante o distribuidor del producto. Si no lo necesitas en la etiqueta, desactiva el toggle <strong>"En etiqueta"</strong>.</div>
       <div id="supplierFields">
         <div class="field"><label>Nombre</label><input type="text" id="supplierName" placeholder="Ej: Droguería Industrial S.A." oninput="updatePreview()"></div>
         <div class="row">
@@ -264,8 +298,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
     </div>
     <div class="section">
-      <div class="section-header"><div class="section-number">8</div><div class="section-title">Tamaño de Etiqueta</div></div>
-      <p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Preset o medidas personalizadas (mm).</p>
+      <div class="section-header"><div class="section-number">8</div><div class="section-title">Tamano de Etiqueta</div></div>
+      <div class="section-hint">Elegi un <strong>tamano predefinido</strong> segun el recipiente (vial, frasco, botella, bidon) o ingresa medidas personalizadas en milimetros. La etiqueta se adapta automaticamente al tamano elegido.</div>
       <div class="size-presets">
         <button class="size-preset" data-w="40" data-h="30" onclick="setSize(40,30,this)">Vial 40×30</button>
         <button class="size-preset" data-w="60" data-h="40" onclick="setSize(60,40,this)">Frasco chico 60×40</button>
@@ -300,38 +334,111 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal-overlay" id="helpModal" onclick="if(event.target===this)closeHelp()">
-  <div class="modal">
+  <div class="modal" style="max-width:720px;">
     <button class="modal-close" onclick="closeHelp()">&times;</button>
-    <h2>Como usar el Generador de Etiquetas SGA/GHS</h2>
-    <h3>1. Completar los datos</h3>
-    <p>Llena los campos del panel izquierdo de arriba hacia abajo:</p>
-    <ul>
-      <li><strong>Institucion:</strong> El nombre de tu colegio o laboratorio que aparece como encabezado.</li>
-      <li><strong>Producto:</strong> Nombre del producto quimico, formula (se convierte automaticamente: H2SO4 → H₂SO₄), concentracion y opcionalmente el numero CAS (se puede desactivar con el toggle).</li>
-      <li><strong>Palabra de advertencia:</strong> PELIGRO (rojo) o ATENCION (naranja) segun la clasificacion.</li>
-      <li><strong>Pictogramas:</strong> Hace clic en los iconos GHS correspondientes. Se pueden seleccionar varios.</li>
-      <li><strong>Frases H y P:</strong> Busca por codigo o por palabra clave en el buscador. Tambien podes <strong>pegar</strong> una lista de codigos (ej: "H314, H331, H335") en el campo de pegado y se detectan automaticamente.</li>
-      <li><strong>Proveedor:</strong> Datos del fabricante. Se puede desactivar con el toggle si no se necesita en la etiqueta.</li>
-      <li><strong>Tamano:</strong> Elegir un preset (vial, frasco, botella) o poner medidas personalizadas en mm.</li>
-    </ul>
-    <h3>2. Vista previa en tiempo real</h3>
-    <p>El panel derecho muestra como queda la etiqueta. Usa los botones + y - para hacer zoom. La etiqueta se adapta automaticamente al tamano: en etiquetas chicas las frases se abrevian a solo codigos (H: H314, P: P280).</p>
-    <h3>3. Modos de frases H y P</h3>
-    <p>Cada seccion tiene botones <kbd>Solo codigo</kbd> y <kbd>Frase completa</kbd>. En etiquetas grandes se muestra el texto completo; en chicas se cambia a codigos automaticamente para que entre todo.</p>
-    <h3>4. Guardar y exportar</h3>
-    <ul>
-      <li><strong>&#x1F4F7; Imagen:</strong> Descarga la etiqueta como imagen PNG de alta resolucion.</li>
-      <li><strong>&#x1F4CB; Excel:</strong> Exporta todos los datos de la etiqueta a un archivo CSV que se abre en Excel, Google Sheets o LibreOffice para editar.</li>
-      <li><strong>&#x1F4BE; Guardar:</strong> Guarda el proyecto actual como archivo JSON y en el cache del navegador. Podes retomar el trabajo despues.</li>
-      <li><strong>&#x1F4C2; Cargar:</strong> Carga un proyecto guardado previamente desde un archivo JSON.</li>
-      <li><strong>&#x2399; Imprimir:</strong> Envia la etiqueta a la impresora. Podes elegir cuantas copias.</li>
-    </ul>
-    <h3>5. Pegar frases H/P</h3>
-    <p>Debajo de cada buscador de frases hay un campo de pegado. Podes copiar codigos de una ficha de seguridad (SDS) y pegarlos ahi. El sistema detecta automaticamente los codigos validos (H200-H420, P101-P503) y los agrega.</p>
-    <h3>6. Formula quimica</h3>
-    <p>Escribir la formula normalmente: <kbd>H2SO4</kbd> se convierte en H₂SO₄. Usar <kbd>-></kbd> para flechas de reaccion (→) y <kbd>^</kbd> para superindices (Fe^3+ → Fe³⁺).</p>
-    <h3>7. Progreso automatico</h3>
-    <p>El sistema guarda automaticamente tu trabajo en el cache del navegador. Si cerras y volves a abrir, tu ultimo progreso se recupera automaticamente.</p>
+    <h2>Guia completa: Generador de Etiquetas SGA/GHS</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">Esta herramienta te permite crear <strong>etiquetas de seguridad</strong> para los productos quimicos de tu laboratorio, siguiendo el <strong>Sistema Globalmente Armonizado (SGA/GHS)</strong>, que es el estandar internacional obligatorio para la comunicacion de peligros quimicos.</p>
+
+    <div class="tip-box"><strong>Tip:</strong> Toda la informacion que necesitas para llenar la etiqueta esta en la <strong>Ficha de Datos de Seguridad (FDS o SDS)</strong> del producto quimico. Si no la tenes, busca en internet el nombre del producto + "ficha de seguridad" o "SDS".</div>
+
+    <h3>Paso a paso</h3>
+
+    <div class="step-box">
+      <h4><span class="step-num">1</span> Institucion</h4>
+      <p>Escribi el nombre de tu colegio o laboratorio. Aparece como encabezado en la parte superior de la etiqueta.</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">2</span> Identificacion del Producto</h4>
+      <p><strong>Nombre:</strong> El nombre comercial o cientifico del producto (ej: "Acido Clorhidrico", "Etanol").</p>
+      <p><strong>Formula quimica:</strong> Escribila normalmente y se convierte sola. Ejemplos:</p>
+      <div class="example-block">
+        H2SO4 &rarr; H&#8322;SO&#8324;<br>
+        NaOH &rarr; NaOH<br>
+        Ca(OH)2 &rarr; Ca(OH)&#8322;<br>
+        Fe^3+ &rarr; Fe&#179;&#8314; (superindice)<br>
+        2H2+O2->2H2O &rarr; 2H&#8322;+O&#8322; &rarr; 2H&#8322;O
+      </div>
+      <p><strong>Concentracion:</strong> El porcentaje o concentracion (ej: "37%", "0.1 M").</p>
+      <p><strong>N° CAS:</strong> Identificador universal del producto quimico. Se puede desactivar con el interruptor si no lo necesitas.</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">3</span> Palabra de Advertencia</h4>
+      <p>Segun la clasificacion del producto, elegir:</p>
+      <p><strong style="color:#cc0000;">PELIGRO</strong> &mdash; Para productos con peligros mas graves (ej: toxico, corrosivo fuerte).</p>
+      <p><strong style="color:#e68a00;">ATENCION</strong> &mdash; Para productos con peligros menores (ej: irritante, nocivo).</p>
+      <p>Esta informacion esta en la <strong>seccion 2</strong> de la FDS.</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">4</span> Pictogramas de Peligro</h4>
+      <p>Los pictogramas son los <strong>rombos rojos con simbolos negros</strong> que indican visualmente el tipo de peligro. Hace clic en los que correspondan (podes seleccionar varios). Los mas comunes en laboratorios escolares:</p>
+      <ul style="margin:6px 0 0 16px;">
+        <li><strong>GHS02 (Llama):</strong> Productos inflamables como etanol, acetona.</li>
+        <li><strong>GHS05 (Corrosion):</strong> Acidos y bases fuertes como HCl, NaOH.</li>
+        <li><strong>GHS07 (Signo !):</strong> Irritantes, nocivos. Muy comun en laboratorio.</li>
+        <li><strong>GHS09 (Medio ambiente):</strong> Toxico para organismos acuaticos.</li>
+      </ul>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">5</span> Frases H (Indicaciones de Peligro)</h4>
+      <p>Las frases H describen los peligros especificos. Hay <strong>dos formas</strong> de agregarlas:</p>
+      <p><strong>a) Buscador:</strong> Escribi el codigo (H314) o una palabra clave ("quemadura", "toxico") y hace clic en la frase para agregarla.</p>
+      <p><strong>b) Pegar codigos:</strong> Copia los codigos de la FDS y pegalos en el campo "Pegar frases H aqui". El sistema los detecta automaticamente.</p>
+      <div class="example-block">Ejemplo de pegado: H314, H331, H335<br>Tambien funciona: H314+H331 H335<br>O simplemente: H314 H331 H335</div>
+      <p>Podes elegir entre mostrar <kbd>Solo codigo</kbd> (ej: H314) o <kbd>Frase completa</kbd> (ej: H314: Provoca quemaduras graves...).</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">6</span> Frases P (Consejos de Prudencia)</h4>
+      <p>Funcionan igual que las frases H. Las frases P indican <strong>que hacer</strong> para protegerse. Ej: P280 = "Usar guantes", P305+P351+P338 = "Lavar ojos con agua".</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">7</span> Proveedor</h4>
+      <p>Datos del fabricante o distribuidor. Si no lo necesitas, desactivalo con el interruptor "En etiqueta" y la etiqueta aprovecha ese espacio.</p>
+    </div>
+
+    <div class="step-box">
+      <h4><span class="step-num">8</span> Tamano de Etiqueta</h4>
+      <p>Elegi un tamano predefinido segun tu recipiente o pone medidas personalizadas en milimetros:</p>
+      <ul style="margin:4px 0 0 16px;">
+        <li><strong>Vial 40x30:</strong> Para tubos de ensayo y viales pequenos.</li>
+        <li><strong>Frasco chico 60x40:</strong> Frascos de 50-100 ml.</li>
+        <li><strong>Frasco med. 80x60:</strong> Frascos de 250-500 ml (recomendado).</li>
+        <li><strong>Frasco grande 100x70:</strong> Frascos de 1 litro.</li>
+        <li><strong>Botella A6 / Bidon A5:</strong> Recipientes grandes y bidones.</li>
+      </ul>
+      <p>En etiquetas chicas, las frases se abrevian automaticamente a solo codigos para que entre todo.</p>
+    </div>
+
+    <h3>Vista previa y zoom</h3>
+    <p>El panel derecho muestra la etiqueta en tiempo real. Usa los botones <kbd>+</kbd> <kbd>-</kbd> para hacer zoom y el boton <kbd>&#x2291;</kbd> para ajustar al tamano de la ventana.</p>
+
+    <h3>Guardar, exportar e imprimir</h3>
+    <div class="step-box">
+      <h4>Botones de la barra superior</h4>
+      <ul style="margin:4px 0 0 16px;">
+        <li><strong>? Ayuda:</strong> Abre esta guia.</li>
+        <li><strong>Ejemplo:</strong> Carga un ejemplo completo (Acido Clorhidrico) para que veas como funciona.</li>
+        <li><strong>Imagen:</strong> Descarga la etiqueta como imagen PNG de alta calidad, lista para imprimir o enviar.</li>
+        <li><strong>Excel:</strong> Exporta todos los datos a un archivo CSV que se abre en Excel, Google Sheets o LibreOffice.</li>
+        <li><strong>Guardar:</strong> Guarda tu trabajo en un archivo JSON y en el cache del navegador.</li>
+        <li><strong>Cargar:</strong> Abre un proyecto guardado previamente.</li>
+        <li><strong>Limpiar:</strong> Borra todos los campos para empezar de nuevo.</li>
+        <li><strong>Imprimir:</strong> Envia la etiqueta a la impresora. Configura el numero de copias en la seccion 8.</li>
+      </ul>
+    </div>
+
+    <div class="tip-box"><strong>Tip:</strong> Tu trabajo se guarda automaticamente en el navegador cada 5 segundos. Si cerras y volves a abrir la pagina, todo tu progreso se recupera solo.</div>
+
+    <h3>Que es el SGA/GHS?</h3>
+    <p>El <strong>Sistema Globalmente Armonizado (SGA)</strong>, conocido internacionalmente como <strong>GHS</strong> (Globally Harmonized System), es un sistema estandarizado de la ONU para clasificar y comunicar los peligros de los productos quimicos. Es obligatorio en Uruguay y en la mayoria de los paises.</p>
+    <p>Una etiqueta SGA contiene: nombre del producto, pictogramas de peligro, palabra de advertencia, frases H y P, e informacion del proveedor. Este generador te ayuda a crear esas etiquetas facilmente.</p>
+
+    <div class="warn-box"><strong>Importante:</strong> Este generador es una herramienta educativa de apoyo. Siempre verifica la informacion con la <strong>Ficha de Datos de Seguridad (FDS)</strong> oficial del producto quimico.</div>
   </div>
 </div>
 <script>
@@ -570,7 +677,7 @@ function setPPhraseMode(mode){
   updatePreview();
 }
 
-function init(){renderPictoGrid();updateChemPreview();updatePreview();setTimeout(zoomFit,100);document.addEventListener('click',e=>{if(!e.target.closest('.phrase-search-container'))document.querySelectorAll('.phrase-dropdown').forEach(d=>d.classList.remove('open'))})}
+function init(){renderPictoGrid();updateChemPreview();updatePreview();setTimeout(zoomFit,100);document.addEventListener('click',e=>{if(!e.target.closest('.phrase-search-container'))document.querySelectorAll('.phrase-dropdown').forEach(d=>d.classList.remove('open'))});if(localStorage.getItem('sga_welcome_dismissed')==='1'){var wb=document.getElementById('welcomeBanner');if(wb)wb.style.display='none'}}
 
 function renderPictoGrid(){document.getElementById('pictoGrid').innerHTML=PICTOGRAMS.map(p=>'<div class="picto-item" id="picto-'+p.id+'" onclick="togglePicto(\''+p.id+'\')"><div class="picto-check"><svg width="10" height="10" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="2,5 4.5,8 8,2.5"/></svg></div><img src="'+p.id+'.png" alt="'+p.name+'"><div class="picto-label">'+p.name+'</div></div>').join('')}
 
@@ -841,59 +948,55 @@ function parsePastedPhrases(type){
 /* ===== GUARDAR IMAGEN ===== */
 
 function saveImage(){
-  console.log('[saveImage] Iniciando captura de imagen...');
   var label=document.getElementById('labelPreview');
-  if(!label){console.error('[saveImage] No se encontró el elemento labelPreview');return}
-  var pxW=labelW*3.78,pxH=labelH_*3.78;
-  console.log('[saveImage] Dimensiones label:', pxW+'x'+pxH, 'px ('+labelW+'x'+labelH_+' mm)');
-  console.log('[saveImage] Label innerHTML length:', label.innerHTML.length);
-  console.log('[saveImage] Label tiene', label.querySelectorAll('img').length, 'imágenes');
-
-  // Guardar zoom actual y resetear para captura limpia
+  if(!label||!label.innerHTML){showToast('Primero genera una etiqueta');return}
   var wrapper=document.getElementById('labelWrapper');
   var originalTransform=wrapper.style.transform;
   wrapper.style.transform='none';
-  console.log('[saveImage] Zoom reseteado para captura');
 
-  if(typeof html2canvas==='undefined'){
-    console.error('[saveImage] html2canvas no está cargado. Intentando fallback...');
-    wrapper.style.transform=originalTransform;
-    saveImageCanvasFallback(label,pxW,pxH);
-    return;
-  }
+  // Wait a frame for the transform reset to take effect
+  requestAnimationFrame(function(){
+    if(typeof html2canvas==='undefined'){
+      wrapper.style.transform=originalTransform;
+      saveImageCanvasFallback(label,labelW*3.78,labelH_*3.78);
+      return;
+    }
 
-  console.log('[saveImage] html2canvas disponible, capturando...');
-  html2canvas(label,{
-    scale:3,
-    useCORS:true,
-    allowTaint:true,
-    backgroundColor:'#ffffff',
-    width:pxW,
-    height:pxH,
-    logging:true
-  }).then(function(canvas){
-    console.log('[saveImage] Canvas generado:', canvas.width+'x'+canvas.height);
-    wrapper.style.transform=originalTransform;
-    canvas.toBlob(function(blob){
-      if(!blob){console.error('[saveImage] toBlob retornó null');return}
-      console.log('[saveImage] Blob generado:', blob.size, 'bytes');
+    // Clone the label into a temporary off-screen container for clean capture
+    var tempDiv=document.createElement('div');
+    tempDiv.style.cssText='position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;';
+    var clone=label.cloneNode(true);
+    clone.style.transform='none';
+    tempDiv.appendChild(clone);
+    document.body.appendChild(tempDiv);
+
+    html2canvas(clone,{
+      scale:3,
+      useCORS:true,
+      allowTaint:true,
+      backgroundColor:'#ffffff',
+      logging:false
+    }).then(function(canvas){
+      document.body.removeChild(tempDiv);
+      wrapper.style.transform=originalTransform;
+      var dataURL=canvas.toDataURL('image/png');
       var a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
+      a.href=dataURL;
       a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
-      console.log('[saveImage] Descargando como:', a.download);
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
       showToast('Imagen PNG descargada');
-    },'image/png');
-  }).catch(function(err){
-    console.error('[saveImage] Error html2canvas:', err);
-    wrapper.style.transform=originalTransform;
-    saveImageCanvasFallback(label,pxW,pxH);
+    }).catch(function(err){
+      document.body.removeChild(tempDiv);
+      wrapper.style.transform=originalTransform;
+      console.error('Error captura imagen:', err);
+      saveImageCanvasFallback(label,labelW*3.78,labelH_*3.78);
+    });
   });
 }
 
 function saveImageCanvasFallback(label,pxW,pxH){
-  console.log('[saveImageFallback] Usando método canvas manual...');
   var scale=3;
   var canvas=document.createElement('canvas');
   canvas.width=pxW*scale;canvas.height=pxH*scale;
@@ -917,13 +1020,12 @@ function saveImageCanvasFallback(label,pxW,pxH){
   if(selectedH.length>0){ctx.fillText('H: '+selectedH.map(function(p){return p.code}).join(', '),6,y);y+=lh*0.8}
   if(selectedP.length>0){ctx.fillText('P: '+selectedP.map(function(p){return p.code}).join(', '),6,y);y+=lh*0.8}
 
-  console.log('[saveImageFallback] Canvas manual generado');
-  canvas.toBlob(function(blob){
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
-    a.click();URL.revokeObjectURL(a.href);
-    showToast('Imagen descargada (calidad básica)');
-  },'image/png');
+  var dataURL=canvas.toDataURL('image/png');
+  var a=document.createElement('a');
+  a.href=dataURL;
+  a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  showToast('Imagen descargada (calidad basica)');
 }
 
 /* ===== EXPORTAR EXCEL (CSV) ===== */
