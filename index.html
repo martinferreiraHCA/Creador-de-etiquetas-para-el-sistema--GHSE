@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Generador de Etiquetas SGA/GHS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0e0f13;--surface:#16171d;--surface2:#1e1f27;--surface3:#262730;--border:#2e3040;--text:#e8e9ed;--text2:#9a9cb0;--text3:#6b6d82;--accent:#4a6cf7;--accent-glow:rgba(74,108,247,.15);--red:#e74c4c;--red-glow:rgba(231,76,76,.12);--amber:#f0a030;--green:#34c759;--radius:12px;--radius-sm:8px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -840,106 +841,89 @@ function parsePastedPhrases(type){
 /* ===== GUARDAR IMAGEN ===== */
 
 function saveImage(){
+  console.log('[saveImage] Iniciando captura de imagen...');
   var label=document.getElementById('labelPreview');
+  if(!label){console.error('[saveImage] No se encontró el elemento labelPreview');return}
   var pxW=labelW*3.78,pxH=labelH_*3.78;
-  var scale=4;
+  console.log('[saveImage] Dimensiones label:', pxW+'x'+pxH, 'px ('+labelW+'x'+labelH_+' mm)');
+  console.log('[saveImage] Label innerHTML length:', label.innerHTML.length);
+  console.log('[saveImage] Label tiene', label.querySelectorAll('img').length, 'imágenes');
 
-  // Primero convertir todas las imágenes del label a data URLs
-  var imgs=label.querySelectorAll('img');
-  var promises=[];
-  imgs.forEach(function(img){
-    if(img.src&&!img.src.startsWith('data:')){
-      promises.push(convertImgToDataURL(img));
-    }
-  });
+  // Guardar zoom actual y resetear para captura limpia
+  var wrapper=document.getElementById('labelWrapper');
+  var originalTransform=wrapper.style.transform;
+  wrapper.style.transform='none';
+  console.log('[saveImage] Zoom reseteado para captura');
 
-  Promise.all(promises).then(function(dataURLs){
-    // Clonar el label con las imágenes ya convertidas
-    var clone=label.cloneNode(true);
-    var cloneImgs=clone.querySelectorAll('img');
-    var idx=0;
-    cloneImgs.forEach(function(cimg){
-      if(idx<dataURLs.length&&dataURLs[idx])cimg.setAttribute('src',dataURLs[idx]);
-      idx++;
-    });
+  if(typeof html2canvas==='undefined'){
+    console.error('[saveImage] html2canvas no está cargado. Intentando fallback...');
+    wrapper.style.transform=originalTransform;
+    saveImageCanvasFallback(label,pxW,pxH);
+    return;
+  }
 
-    // Obtener todos los estilos computados inline
-    var cssText=getComputedCSS();
-    var htmlContent=cssText+'<div style="width:'+pxW+'px;height:'+pxH+'px;'+getInlineStyles(label)+'">'+clone.innerHTML+'</div>';
-
-    var svgData='<svg xmlns="http://www.w3.org/2000/svg" width="'+(pxW*scale)+'" height="'+(pxH*scale)+'">'
-      +'<foreignObject width="'+pxW+'" height="'+pxH+'" transform="scale('+scale+')">'
-      +'<div xmlns="http://www.w3.org/1999/xhtml">'+htmlContent+'</div>'
-      +'</foreignObject></svg>';
-
-    var svgBlob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
-    var svgUrl=URL.createObjectURL(svgBlob);
-    var canvas=document.createElement('canvas');
-    canvas.width=pxW*scale;canvas.height=pxH*scale;
-    var ctx=canvas.getContext('2d');
-    var img2=new Image();
-    img2.onload=function(){
-      ctx.drawImage(img2,0,0);
-      URL.revokeObjectURL(svgUrl);
-      canvas.toBlob(function(b){
-        var a=document.createElement('a');a.href=URL.createObjectURL(b);
-        a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
-        a.click();URL.revokeObjectURL(a.href);showToast('Imagen PNG descargada');
-      },'image/png');
-    };
-    img2.onerror=function(){
-      URL.revokeObjectURL(svgUrl);
-      saveImageFallback();
-    };
-    img2.src=svgUrl;
-  }).catch(function(){saveImageFallback()});
-}
-
-function convertImgToDataURL(img){
-  return new Promise(function(resolve){
-    var canvas=document.createElement('canvas');
-    canvas.width=img.naturalWidth||100;canvas.height=img.naturalHeight||100;
-    var ctx=canvas.getContext('2d');
-    var tempImg=new Image();
-    tempImg.crossOrigin='anonymous';
-    tempImg.onload=function(){ctx.drawImage(tempImg,0,0);resolve(canvas.toDataURL('image/png'))};
-    tempImg.onerror=function(){resolve(null)};
-    tempImg.src=img.src;
+  console.log('[saveImage] html2canvas disponible, capturando...');
+  html2canvas(label,{
+    scale:3,
+    useCORS:true,
+    allowTaint:true,
+    backgroundColor:'#ffffff',
+    width:pxW,
+    height:pxH,
+    logging:true
+  }).then(function(canvas){
+    console.log('[saveImage] Canvas generado:', canvas.width+'x'+canvas.height);
+    wrapper.style.transform=originalTransform;
+    canvas.toBlob(function(blob){
+      if(!blob){console.error('[saveImage] toBlob retornó null');return}
+      console.log('[saveImage] Blob generado:', blob.size, 'bytes');
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
+      console.log('[saveImage] Descargando como:', a.download);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Imagen PNG descargada');
+    },'image/png');
+  }).catch(function(err){
+    console.error('[saveImage] Error html2canvas:', err);
+    wrapper.style.transform=originalTransform;
+    saveImageCanvasFallback(label,pxW,pxH);
   });
 }
 
-function getInlineStyles(el){
-  var s=el.getAttribute('style')||'';
-  var cs=window.getComputedStyle(el);
-  if(!s.includes('background'))s+='background:#fff;';
-  if(!s.includes('border'))s+='border:2.5px solid #cc0000;';
-  if(!s.includes('font-family'))s+='font-family:DM Sans,Arial,Helvetica,sans-serif;';
-  if(!s.includes('display'))s+='display:flex;flex-direction:column;';
-  if(!s.includes('overflow'))s+='overflow:hidden;';
-  if(!s.includes('color:'))s+='color:#000;';
-  return s;
-}
+function saveImageCanvasFallback(label,pxW,pxH){
+  console.log('[saveImageFallback] Usando método canvas manual...');
+  var scale=3;
+  var canvas=document.createElement('canvas');
+  canvas.width=pxW*scale;canvas.height=pxH*scale;
+  var ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,pxW,pxH);
+  ctx.strokeStyle='#cc0000';ctx.lineWidth=2;ctx.strokeRect(1,1,pxW-2,pxH-2);
 
-function getComputedCSS(){
-  return '<style>'
-    +'*{margin:0;padding:0;box-sizing:border-box}'
-    +'.label-institution{text-align:center;font-weight:700;color:#000;border-bottom:1.5px solid #cc0000;padding-bottom:1mm;margin-bottom:1.5mm;text-transform:uppercase;letter-spacing:.5px;font-family:DM Sans,Arial,sans-serif}'
-    +'.label-top{display:flex;justify-content:space-between;align-items:flex-start;gap:2mm;margin-bottom:1.5mm}'
-    +'.label-product-name{font-weight:700;color:#000;line-height:1.15;flex:1;font-family:DM Sans,Arial,sans-serif}'
-    +'.label-signal-word{font-weight:700;text-transform:uppercase;text-align:right;white-space:nowrap;font-family:DM Sans,Arial,sans-serif}'
-    +'.signal-peligro{color:#cc0000}.signal-atencion{color:#e68a00}'
-    +'.label-pictograms{display:flex;flex-wrap:wrap;gap:1mm;justify-content:center;margin-bottom:1.5mm;padding:1mm 0;border-top:1px solid #ccc;border-bottom:1px solid #ccc}'
-    +'.label-pictograms img{flex-shrink:0}'
-    +'.label-body{flex:1;display:flex;flex-direction:column;gap:1mm;overflow:hidden;font-family:DM Sans,Arial,sans-serif}'
-    +'.label-section-title{font-weight:700;text-transform:uppercase;color:#000;border-bottom:1px solid #000;padding-bottom:.3mm;margin-bottom:.3mm;font-family:DM Sans,Arial,sans-serif}'
-    +'.label-text{color:#222;line-height:1.25;font-family:DM Sans,Arial,sans-serif}'
-    +'.label-footer{margin-top:auto;padding-top:1mm;border-top:1px solid #ccc}'
-    +'.label-supplier{color:#333;line-height:1.2;font-family:DM Sans,Arial,sans-serif}'
-    +'</style>';
-}
+  var y=8;var lh=12;
+  ctx.fillStyle='#000';ctx.font='bold 10px Arial';ctx.textAlign='left';
+  var inst=document.getElementById('institutionName').value;
+  if(inst){ctx.textAlign='center';ctx.fillText(inst,pxW/2,y);y+=lh;ctx.textAlign='left'}
+  var name=document.getElementById('productName').value||'Producto';
+  ctx.font='bold 12px Arial';ctx.fillText(name,6,y);y+=lh;
+  var cas=document.getElementById('casNumber').value;
+  var conc=document.getElementById('concentration').value;
+  if(cas||conc){ctx.font='8px Arial';ctx.fillStyle='#555';ctx.fillText([cas?'CAS:'+cas:'',conc].filter(Boolean).join(' | '),6,y);y+=lh*0.8;ctx.fillStyle='#000'}
+  var signal=document.getElementById('signalWord').value;
+  if(signal){ctx.font='bold 10px Arial';ctx.fillStyle=signal==='PELIGRO'?'#cc0000':'#e68a00';ctx.fillText(signal,pxW-6-ctx.measureText(signal).width,18);ctx.fillStyle='#000'}
+  ctx.font='8px Arial';
+  if(selectedH.length>0){ctx.fillText('H: '+selectedH.map(function(p){return p.code}).join(', '),6,y);y+=lh*0.8}
+  if(selectedP.length>0){ctx.fillText('P: '+selectedP.map(function(p){return p.code}).join(', '),6,y);y+=lh*0.8}
 
-function saveImageFallback(){
-  showToast('No se pudo generar la imagen. Usa Imprimir > Guardar como PDF.');
+  console.log('[saveImageFallback] Canvas manual generado');
+  canvas.toBlob(function(blob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='etiqueta_'+((document.getElementById('productName').value||'producto').replace(/\s+/g,'_'))+'.png';
+    a.click();URL.revokeObjectURL(a.href);
+    showToast('Imagen descargada (calidad básica)');
+  },'image/png');
 }
 
 /* ===== EXPORTAR EXCEL (CSV) ===== */
