@@ -120,7 +120,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .label-text{color:#222;line-height:1.25}
 .label-footer{margin-top:auto;padding-top:1mm;border-top:1px solid #ccc}
 .label-supplier{color:#333;line-height:1.2}
-@media print{body{background:#fff}body::before{display:none}.header,.panel-form,.preview-header{display:none!important}.app{display:block}.panel-preview{background:none;padding:0;max-height:none}.preview-container{background:none!important;border:none;padding:0;display:flex;align-items:flex-start;justify-content:flex-start}.label-wrapper{transform:none!important}.label{border:2.5px solid #cc0000!important}@page{margin:5mm}}
+@media print{body{background:#fff}body::before{display:none}.header,.panel-form,.preview-header{display:none!important}.app{display:block}.panel-preview{background:none;padding:0;max-height:none;overflow:visible}.preview-container{background:none!important;border:none;padding:0;display:block}.label-wrapper{transform:none!important;display:flex!important;flex-wrap:wrap!important;gap:3mm!important;align-content:flex-start!important;align-items:flex-start!important}.label{border:2.5px solid #cc0000!important;page-break-inside:avoid;break-inside:avoid}@page{margin:5mm}}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;z-index:200;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -311,7 +311,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="row-3">
         <div class="field"><label>Ancho (mm)</label><input type="number" id="labelWidth" value="80" min="20" max="300" oninput="updateSizeFromInput()"></div>
         <div class="field"><label>Alto (mm)</label><input type="number" id="labelHeight" value="60" min="20" max="300" oninput="updateSizeFromInput()"></div>
-        <div class="field"><label>Copias</label><input type="number" id="labelCopies" value="1" min="1" max="20"></div>
+        <div class="field"><label>Copias</label><input type="number" id="labelCopies" value="1" min="1" max="100"></div>
       </div>
     </div>
   </div>
@@ -747,17 +747,16 @@ function zoomFit(){var c=document.getElementById('previewContainer');setZoom(Mat
 /* ===== ESTRATEGIA CLÁSICA (frascos medianos, grandes, A6, A5) ===== */
 
 function classicGetFontSizes(w,h){
-  var a=w*h;var minDim=Math.min(w,h);var basePicto;
-  if(a<4000){basePicto=Math.min(minDim*0.28,11);return{inst:7,title:9,signal:8,sec:6,body:5.5,foot:5,picto:basePicto}}
-  if(a<8000){basePicto=Math.min(minDim*0.3,14);return{inst:8,title:11,signal:10,sec:7,body:6.5,foot:5.5,picto:basePicto}}
-  if(a<16000){basePicto=Math.min(minDim*0.3,18);return{inst:10,title:14,signal:12,sec:8,body:7.5,foot:6.5,picto:basePicto}}
-  basePicto=Math.min(minDim*0.3,28);
-  return{inst:12,title:18,signal:16,sec:10,body:9,foot:8,picto:basePicto};
+  var a=w*h;
+  if(a<4000)return{inst:6,title:8,signal:7,sec:5.5,body:5,foot:4.5};
+  if(a<8000)return{inst:7,title:9.5,signal:8.5,sec:6,body:5.5,foot:5};
+  if(a<16000)return{inst:9,title:12.5,signal:11,sec:7,body:7,foot:6};
+  return{inst:11.5,title:17,signal:15,sec:9.5,body:8.5,foot:7.5};
 }
 
 function classicGetPictoSize(fs,w){
   var nPictos=selectedPictos.size||1;
-  return Math.min(fs.picto,(w*0.85)/nPictos);
+  return Math.min(labelH_*0.40,(w*0.90)/nPictos);
 }
 
 function classicGetPhraseMode(type){
@@ -815,7 +814,7 @@ function scaleFonts(fs,s){
 
 function compactGetPictoSize(fs,w,h){
   var nPictos=selectedPictos.size||1;
-  return Math.max(1.5,Math.min(fs.picto,(w*0.9)/nPictos,h*0.18));
+  return Math.max(1.5,Math.min(h*0.40,(w*0.90)/nPictos));
 }
 
 function compactBuildHTML(fs,g){
@@ -880,7 +879,7 @@ function printLabel(){
   var wrapper=document.getElementById('labelWrapper');
   var original=document.getElementById('labelPreview');
   var clones=[];
-  for(var i=1;i<copies;i++){var clone=original.cloneNode(true);clone.style.marginTop='4mm';wrapper.appendChild(clone);clones.push(clone)}
+  for(var i=1;i<copies;i++){var clone=original.cloneNode(true);clone.id='';wrapper.appendChild(clone);clones.push(clone)}
   window.print();clones.forEach(function(c){c.remove()});showToast('Etiqueta enviada a impresión');
 }
 
