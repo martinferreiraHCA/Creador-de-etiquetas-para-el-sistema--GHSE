@@ -209,10 +209,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
     <div class="section">
       <div class="section-header"><div class="section-number">1</div><div class="section-title">Institucion</div></div>
-      <div class="section-hint">El nombre de tu colegio o laboratorio que aparecera como <strong>encabezado</strong> en la parte superior de la etiqueta.</div>
+      <div class="section-hint">El nombre de tu colegio o laboratorio que aparecera como <strong>encabezado</strong> en la parte superior de la etiqueta. Opcionalmente podés agregar un subtítulo debajo.</div>
       <div class="field">
         <label>Nombre de la institucion</label>
         <input type="text" id="institutionName" placeholder="Ej: Colegio Hans Christian Andersen" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Subtítulo (opcional)</label>
+        <input type="text" id="institutionSubtitle" placeholder="Ej: Laboratorio de Química, Departamento de Ciencias..." oninput="updatePreview()">
       </div>
     </div>
     <div class="section">
@@ -817,7 +821,9 @@ function classicUpdatePreview(){
   label.className='label label-classic';
   label.style.width=pxW+'px';label.style.height=pxH+'px';label.style.padding='';
   var sm=szMul;
-  var instHTML=inst?'<div class="label-institution" style="font-size:'+(fs.inst*sm.inst/100)+'pt;">'+inst+'</div>':'';
+  var instSub=document.getElementById('institutionSubtitle').value;
+  var instHTML='';
+  if(inst){instHTML='<div class="label-institution" style="font-size:'+(fs.inst*sm.inst/100)+'pt;">'+inst+(instSub?'<div style="font-size:'+(fs.inst*0.78*sm.inst/100)+'pt;font-weight:500;text-transform:none;letter-spacing:0;color:#333;margin-top:0.2mm;">'+instSub+'</div>':'')+'</div>'}
   var sub=[];if(showCas&&cas)sub.push('CAS: '+cas);if(conc)sub.push(conc);
   var subHTML=sub.length?'<div style="font-size:'+(fs.body*sm.subtitle/100)+'pt;color:#555;margin-top:0.3mm;">'+sub.join(' | ')+'</div>':'';
   var chemHTML=chemEq?'<div style="font-size:'+(fs.title*0.75*sm.formula/100)+'pt;color:#333;margin-top:0.3mm;font-family:serif;">'+parseChemFormula(chemEq)+'</div>':'';
@@ -863,7 +869,8 @@ function compactBuildHTML(fs,g){
   var suppPhone=document.getElementById('supplierPhone').value;
   var sm=szMul;
   var html='';
-  if(inst)html+='<div style="font-size:'+(fs.inst*sm.inst/100)+'pt;font-weight:700;text-align:center;text-transform:uppercase;line-height:1.05;border-bottom:0.5px solid #cc0000;padding-bottom:'+g+'mm;margin-bottom:'+g+'mm;">'+inst+'</div>';
+  var instSub=document.getElementById('institutionSubtitle').value;
+  if(inst)html+='<div style="font-size:'+(fs.inst*sm.inst/100)+'pt;font-weight:700;text-align:center;text-transform:uppercase;line-height:1.05;border-bottom:0.5px solid #cc0000;padding-bottom:'+g+'mm;margin-bottom:'+g+'mm;">'+inst+(instSub?'<div style="font-size:'+(fs.inst*0.78*sm.inst/100)+'pt;font-weight:500;text-transform:none;letter-spacing:0;color:#333;">'+instSub+'</div>':'')+'</div>';
   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:'+g+'mm;margin-bottom:'+g+'mm;"><div><div style="font-size:'+(fs.title*sm.title/100)+'pt;font-weight:700;line-height:1.05;">'+name+'</div>';
   var sub=[];if(showCas&&cas)sub.push('CAS:'+cas);if(conc)sub.push(conc);
   if(sub.length)html+='<div style="font-size:'+(fs.body*sm.subtitle/100)+'pt;color:#555;">'+sub.join(' | ')+'</div>';
@@ -919,7 +926,7 @@ function printLabel(){
 }
 
 function resetForm(){
-  ['institutionName','productName','casNumber','concentration','chemEquation','supplierName','supplierAddress','supplierPhone'].forEach(function(id){document.getElementById(id).value=''});
+  ['institutionName','institutionSubtitle','productName','casNumber','concentration','chemEquation','supplierName','supplierAddress','supplierPhone'].forEach(function(id){document.getElementById(id).value=''});
   document.getElementById('signalWord').value='';
   document.getElementById('hSearch').value='';document.getElementById('pSearch').value='';
   selectedPictos.clear();selectedH=[];selectedP=[];
@@ -938,6 +945,7 @@ function resetForm(){
 
 function loadExample(){
   document.getElementById('institutionName').value='Colegio y Liceo Hans Christian Andersen';
+  document.getElementById('institutionSubtitle').value='Laboratorio de Química';
   document.getElementById('productName').value='Ácido Clorhídrico';
   document.getElementById('casNumber').value='7647-01-0';
   document.getElementById('concentration').value='37%';
@@ -1112,6 +1120,7 @@ function exportExcel(){
   var rows=[
     ['Campo','Valor'],
     ['Institucion',document.getElementById('institutionName').value],
+    ['Subtitulo institucion',document.getElementById('institutionSubtitle').value],
     ['Producto',document.getElementById('productName').value],
     ['Formula Quimica',document.getElementById('chemEquation').value],
     ['N CAS',document.getElementById('casNumber').value],
@@ -1146,6 +1155,7 @@ function getProjectData(){
   return{
     version:1,
     institutionName:document.getElementById('institutionName').value,
+    institutionSubtitle:document.getElementById('institutionSubtitle').value,
     productName:document.getElementById('productName').value,
     chemEquation:document.getElementById('chemEquation').value,
     casNumber:document.getElementById('casNumber').value,
@@ -1166,6 +1176,7 @@ function getProjectData(){
 
 function applyProjectData(d){
   document.getElementById('institutionName').value=d.institutionName||'';
+  document.getElementById('institutionSubtitle').value=d.institutionSubtitle||'';
   document.getElementById('productName').value=d.productName||'';
   document.getElementById('chemEquation').value=d.chemEquation||'';
   updateChemPreview();
